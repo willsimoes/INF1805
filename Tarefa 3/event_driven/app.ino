@@ -13,7 +13,7 @@ void init_app() {
 void button_changed(int pin, int v) {
   Serial.print("Botao mudou:");
   if(pin==A1) {
-    Serial.println("A1");
+    Serial.println(" A1");
   }
   Serial.print("Para o estado:");
   if(v==HIGH) {
@@ -27,9 +27,14 @@ void button_changed(int pin, int v) {
 
 void timer_expired(void) {
   unsigned long time = millis();
+
+  while(1) {
+   digitalWrite(LED_PIN, LOW);
+   if(time - millis()>=1000) {
+      digitalWrite(LED_PIN, HIGH);
+      return;
+   } 
+  } 
   
-  digitalWrite(LED_PIN, HIGH);
-  if(time>=1000) {
-    digitalWrite(LED_PIN, LOW);
-  }  
-}
+  }
+  
