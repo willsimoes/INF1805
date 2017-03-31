@@ -1,28 +1,28 @@
-#define LED_PIN 13
-#define BUT1_PIN A1
-#define BUT2_PIN A2
+#define LED_PIN 12
+#define BUT1_PIN 35
+#define BUT2_PIN 37
 #include <stdlib.h>
 
-int ledState = HIGH;
+//variáveis globais de estado do led e dos butões
 int but1State = HIGH;
+int ledState = HIGH;
 int but2State = HIGH;
 
-long interval = 1000;
+int waitForButton1 = 0;
+int waitForButton2 = 0;
 
+long interval = 1000;
 unsigned long current = 0;
-// the setup function runs once when you press reset or power the brd
+
 void setup() {
   Serial.begin(9600);
-  // initialize digital pin LED_BUILTIN as an output.
-  pinMode(LED_PIN, OUTPUT);
+  pinMode(LED_PIN, OUTPUT); //registra pino do led como saída
+  pinMode(BUT1_PIN, INPUT); //registra pino do butão 1 como entrada
+  pinMode(BUT2_PIN, INPUT); //registra pino do butão 2 como entrada
 }
 
-// the loop function runs over and over again forever
 void loop() {
-  
   unsigned long time = millis();
-  unsigned long time_but1 = 0;
-  unsigned long time_but2 = 0;
   
   digitalWrite(LED_PIN, ledState);
   if(time - current >= interval) {
@@ -37,28 +37,30 @@ void loop() {
   int currentBut1State = digitalRead(BUT1_PIN);
   int currentBut2State = digitalRead(BUT2_PIN);
 
-  if (currentBut1State==LOW && but1State==HIGH) {
-      interval += 50;
-      time_but1 = millis();
-  } 
-  
+  // se o botão 1 for apertado (ou seja, somente de  HIGH->LOW), desacelera
   if (currentBut2State==LOW && but2State==HIGH) {
-      interval -= 50;
-      time_but2 = millis();
+      interval += 50;
+      if(waitForButton1 && waitForButton1 <= 500) { // se estiver esperando por ele a 500ms ou menos, para
+        waitForButton1 = 0;
+        digitalWrite(LED_PIN, HIGH);
+        exit(1);
+      } else {
+        waitForButton2 = millis(); // se não, espera pelo botão 2
+      }
+      
   } 
 
-  unsigned long diff_time;
-  if(currentBut1State==LOW && currentBut2State==LOW) {
-    diff_time = time_but1 - time_but2;
-    if(diff_time < -1) {
-      diff_time = time_but2 - time_but1;
-    } 
-    
-    if(diff_time<= 500) {
-      digitalWrite(LED_PIN, HIGH);
-      exit(1);
-    }
-  }
+  // se o botão 2 for apertado (ou seja, somente de  HIGH->LOW), acelera
+  if (currentBut2State==LOW && but2State==HIGH) {
+      interval -= 50;
+      if(waitForButton2 && waitForButton2 <= 500) { // se estiver esperando por ele a 500ms ou menos, par
+        waitForButton1 = 0;
+        digitalWrite(LED_PIN, HIGH);
+        exit(1);
+      } else {
+        waitForButton1 = millis(); // se não, espera pelo botão 1
+      }
+  } 
 
   if(currentBut1State != but1State) {
     but1State = currentBut1State;
