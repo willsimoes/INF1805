@@ -1,11 +1,11 @@
 #define BUT1_PIN A1
 #define BUT2_PIN A2
 
-unsigned long current = 0;
 int but1State = HIGH;
 int but2State = HIGH;
 int listenBut1 = 0;
 int listenBut2 = 0;
+int listenTimer = 0;
 int interval;
 
 void button_listen(int pin) {
@@ -19,6 +19,7 @@ void button_listen(int pin) {
 }
 
 void timer_set(int ms) {
+  listenTimer = 1;
   interval = ms;
 }
 
@@ -30,12 +31,13 @@ void setup() {
 
 void loop() {
   unsigned long time = millis();
- 
-  if(time - current >= interval) {
-    current = time;   
-    timer_expired();
-     
-  }
+
+   if(listenTimer) {
+    if(time >= interval) {    
+      timer_expired();   
+      listenTimer = 0;
+    }
+   }
   
   int currentBut1State = digitalRead(BUT1_PIN);
   int currentBut2State = digitalRead(BUT2_PIN);
