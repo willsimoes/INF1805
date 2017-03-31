@@ -38,7 +38,7 @@ void loop() {
   int currentBut2State = digitalRead(BUT2_PIN);
 
   // se o botão 1 for apertado (ou seja, somente de  HIGH->LOW), desacelera
-  if (currentBut2State==LOW && but2State==HIGH) {
+  if (currentBut1State==LOW && but1State==HIGH) {
       interval += 50;
       if(waitForButton1 && waitForButton1 <= 500) { // se estiver esperando por ele a 500ms ou menos, para
         waitForButton1 = 0;
@@ -58,7 +58,7 @@ void loop() {
         digitalWrite(LED_PIN, HIGH);
         exit(1);
       } else {
-        waitForButton1 = millis(); // se não, espera pelo botão 1
+        waitForButton1 = millis(); // se não, espera pelo botão 2
       }
   } 
 
