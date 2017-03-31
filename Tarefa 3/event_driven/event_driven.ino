@@ -8,6 +8,8 @@ int listenBut2 = 0;
 int listenTimer = 0;
 int interval;
 
+unsigned long current = 0;
+
 void button_listen(int pin) {
   if(pin == BUT1_PIN) {
     listenBut1 = 1;
@@ -24,25 +26,22 @@ void timer_set(int ms) {
 }
 
 void setup() {
-  Serial.begin(9600);
-  //Serial.print("Ola");
   init_app();
 }
 
 void loop() {
-  unsigned long time = millis();
-
    if(listenTimer) {
-    if(time >= interval) {    
+    unsigned long time = millis();
+    
+    if(time - current >= interval) {    
+      current = time;
       timer_expired();   
       listenTimer = 0;
     }
    }
   
-  int currentBut1State = digitalRead(BUT1_PIN);
-  int currentBut2State = digitalRead(BUT2_PIN);
-  
   if(listenBut1) {
+    int currentBut1State = digitalRead(BUT1_PIN);
     if(currentBut1State!=but1State) {
       but1State = currentBut1State;
       button_changed(BUT1_PIN, currentBut1State);
@@ -50,6 +49,7 @@ void loop() {
   }   
 
   if(listenBut2) {
+    int currentBut2State = digitalRead(BUT2_PIN);
     if(currentBut2State!=but2State) {
       but2State = currentBut2State;
       button_changed(BUT2_PIN, currentBut2State);
