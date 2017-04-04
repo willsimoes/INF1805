@@ -12,10 +12,11 @@
 #define BUT_UP      37
 
 
-float tempo;
+unsigned long tempo;
+unsigned long iniDist, fimDist = 0;
 float distancia;
 
-int modeBeep = 0;
+int modeBeep = false;
 
 int atraso = 1000;
 
@@ -38,9 +39,8 @@ void setup() {
   pinMode(ECHO_PIN, INPUT);
   //configurando pino do Buzzer como saída
   pinMode(BUZZ_PIN,OUTPUT);
-
   // interrupção do sensor de distancia - é acionada quando o sinal do pino Echo muda (CHANGE)
-  //attachInterrupt(0, intSensor, CHANGE);
+  attachInterrupt(0, intSensor, CHANGE);
 
   //configurando pinos do led
   pinMode(LED_RED, OUTPUT);
@@ -50,44 +50,58 @@ void setup() {
   //configurando pinos dos botoes
   pinMode(BUT_UP, INPUT);
   pinMode(BUT_DOWN, INPUT);
-
   //interrupção do botao - é acionada quando o botão passa pro estado HIGH (RISING)
- attachInterrupt(1, intBotao, RISING );
+  attachInterrupt(1, intBotao, RISING);
 
 }
 
 void loop() {
-  digitalWrite(TRIG_PIN, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(TRIG_PIN, LOW);
+    digitalWrite(TRIG_PIN, HIGH);
+    delayMicroseconds(10);
+    digitalWrite(TRIG_PIN, LOW);
+    delayMicroseconds(2);
+  
+  
+   // medir tempo de ida e volta do pulso ultrassonico
+   //tempo = pulseIn(ECHO_PIN, HIGH);
+   
+   float distancia = tempo / 29.4 / 2;
+   Serial.print("Distancia: ");
+   Serial.print(distancia);
+   Serial.println(" cm");
+  
+   if(modeBeep) {
+     tocarBeep(distancia);
+   } else {
+     tocarFrequencias(distancia);
+   }
  
- // medir tempo de ida e volta do pulso ultrassonico
- tempo = pulseIn(ECHO_PIN, HIGH);
- 
- float distancia = tempo / 29.4 / 2;
- Serial.print("Distancia: ");
- Serial.print(distancia);
- Serial.println(" cm");
-
- if(modeBeep) {
-   tocarBeep(distancia);
- } else {
-   tocarFrequencias(distancia);
- }
 
 }
 
 void intBotao() {
   //ativa modo frequencias
   if(digitalRead(BUT_UP)) {
-    modeBeep = 0;   
+    modeBeep = false;   
   }
 
   //ativa modo beep
   if(digitalRead(BUT_DOWN)) {
-    modeBeep = 1;
+    modeBeep = true;
   }
-  
+}
+
+void intSensor() {
+    // medir tempo de ida e volta do pulso ultrassonico
+    switch(digitalRead(ECHO_PIN)){
+    case HIGH:  
+      iniDist=micros();
+      break;
+    case LOW:
+      fimDist=micros();
+      tempo = (unsigned long) fimDist - iniDist;
+      break;
+  }
 }
  
 void tocarBeep(float distancia) {
@@ -109,7 +123,7 @@ void tocarBeep(float distancia) {
     atraso = 250;
    }
   
-   if(distancia <40) {
+   if(distancia <30) {
     tone(BUZZ_PIN, 2000, 200);
    } else {
     desligarLeds();
