@@ -1,6 +1,9 @@
+// Pinos do Sensor de distancia
 #define TRIG_PIN 22 // Pino TRIG do sensor que dispara o pulso ultrassônico
 #define ECHO_PIN 2 // Pino ECHO do sensor que recebe o pulso ultrassônico de volta
-#define BUZZ_PIN 9 // Pino do Buzzer
+
+// Pino do Buzzer
+#define BUZZ_PIN 9 
 
 // Pinos do led RGB
 #define LED_RED     12
@@ -11,13 +14,11 @@
 #define BUT_DOWN    36
 #define BUT_UP      37
 
-
+// variaveis de controle
 unsigned long tempo;
-unsigned long iniDist, fimDist = 0;
+unsigned long iniMedicao, fimMedicao = 0;
 float distancia;
-
 int modeBeep = false;
-
 int atraso = 1000;
 
 //declaracao das funcoes
@@ -61,8 +62,7 @@ void loop() {
     digitalWrite(TRIG_PIN, LOW);
     delayMicroseconds(2);
   
-  
-   // medir tempo de ida e volta do pulso ultrassonico
+   // medir tempo de ida e volta do pulso ultrassonico - modo bloqueante
    //tempo = pulseIn(ECHO_PIN, HIGH);
    
    float distancia = tempo / 29.4 / 2;
@@ -75,8 +75,6 @@ void loop() {
    } else {
      tocarFrequencias(distancia);
    }
- 
-
 }
 
 void intBotao() {
@@ -84,7 +82,7 @@ void intBotao() {
   if(digitalRead(BUT_UP)) {
     modeBeep = false;   
   }
-
+  
   //ativa modo beep
   if(digitalRead(BUT_DOWN)) {
     modeBeep = true;
@@ -95,11 +93,11 @@ void intSensor() {
     // medir tempo de ida e volta do pulso ultrassonico
     switch(digitalRead(ECHO_PIN)){
     case HIGH:  
-      iniDist=micros();
+      iniMedicao=micros();
       break;
     case LOW:
-      fimDist=micros();
-      tempo = (unsigned long) fimDist - iniDist;
+      fimMedicao=micros();
+      tempo = (unsigned long) fimMedicao - iniMedicao;
       break;
   }
 }
