@@ -34,14 +34,12 @@ void button_changed(int pin, int v) {
 }
 
 void timer_expired(void) {
-  unsigned long time = millis();
-
-  while(1) {
+   Serial.print("Tempo expirou!!!");
+   
    digitalWrite(LED_PIN, LOW);
-   if(time - millis()>=1000) {
-      digitalWrite(LED_PIN, HIGH);
-      return;
-   } 
+   delay(1);
+   digitalWrite(LED_PIN, HIGH);
+  
   } 
 }
   
