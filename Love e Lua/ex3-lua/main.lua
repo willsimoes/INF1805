@@ -1,6 +1,7 @@
 function love.load()
   x = 50 y = 200
   w = 200 h = 150
+
 end
 
 function naimagem (mx, my, x, y)
