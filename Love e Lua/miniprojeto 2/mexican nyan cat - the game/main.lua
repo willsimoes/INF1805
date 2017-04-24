@@ -1,4 +1,6 @@
 local frame_width, frame_height = love.graphics.getDimensions( )
+local elements = {}
+local active_elements = {}
 
 
 
@@ -86,39 +88,97 @@ end
 
 
 function love.load()
+  math.randomseed(os.time())
   cat = newcat() 
-  taco = newtaco() 
-  cucumber = newcucumber() 
+  --[[taco = newtaco() 
+  cucumber = newcucumber() ]]--
+  create_elements()
 
+  pick_active_elements = coroutine.wrap ( function (num)
+  							for i = 1, num do
+  								local index = math.random(#elements)
+  								local e = elements[index]
+  								table.remove(elements, index)
+  								table.insert(active_alements, e)
+							end
+							coroutine.yield()
+						end)
+
+end
+
+function create_elements()
+	for i = 1,10 do
+		elements[i] = newcucumber()
+	end
+	for i = 11, 25 do
+		elements[i] = newtaco()
+	end
 end
 
 function love.draw()
   cat.draw()
-  if taco then 
+ --[[if taco then 
   	 taco.draw()
   end
   if cucumber then 
   	cucumber.draw()
+  end]]--
+
+  for i, element in ipairs(active_elements) do
+  	if element then 
+  		element.draw()
+  	end
   end
+end
+
+function is_empty(list)
+	if not next(list) nil then
+   		return true
+	end
+	return false
 end
 
 
 function love.update(dt)
-	print(cat.score)
 	if love.keyboard.isDown('right') then
-		if taco then
-		taco:update(dt)
-	end
-	if cucumber then
-		cucumber:update(dt)
-	end
+		--[[if taco then
+			taco:update(dt)
+		end
+		if cucumber then
+			cucumber:update(dt)
+		end]]--
+
+		if is_empty(active_elements) then
+			if is_empty(elements) then
+				create_elements()
+			else
+				pick_active_elements(math.random(1, #elements))
+			end
+		else 
+			for i, element in ipairs(active_elements) do
+				if element then 
+					element:update(dt)
+				end
+			end
+		end
+		
 	elseif love.keyboard.isDown('space') then
 		cat.y_velocity = cat.jump_height
 	end
 
 	cat.update(dt)
 
-	if cucumber then
+	for i, element in ipairs(active_elements) do
+		if element then 
+			local posx, posy = element.pos()
+			if cat.affected(posx, posy) then
+				cat.score = cat.score + element.points
+				table.remove(active_elements, i)
+			end
+		end
+	end
+
+	--[[if cucumber then
 		local posx, posy = cucumber.pos()
 		if cat.affected(posx, posy) then
 			cat.score = cat.score - 50
@@ -132,5 +192,5 @@ function love.update(dt)
 			cat.score = cat.score + 20
 			taco = nil
 		end
-	end
+	end]]--
 end
