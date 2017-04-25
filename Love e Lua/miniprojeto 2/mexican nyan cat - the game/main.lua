@@ -6,7 +6,7 @@ local curr_time = 0;
 
 
 function newcat ()
-  local x, width, height = 100, 100, 50
+  local x, width, height = 100, cat_img:getWidth(), cat_img:getHeight()
   local y = frame_height-(height+3)
 
   return {
@@ -19,7 +19,9 @@ function newcat ()
   	return x, x+width, y, y+height
   end,
   draw = function () 
-    love.graphics.rectangle("line", x, y, width, height)
+    --love.graphics.rectangle("line", x, y, width, height)
+    love.graphics.draw(cat_img, x, y)
+    --cat_img:getWidth(), cat_img:getHeight()
   end,
   update = function (dt)
   	if cat.y_velocity ~= 0 then
@@ -47,13 +49,14 @@ function newcat ()
 end
 
 function newtaco(y, temp) 
-	local x, width, height = frame_width, 50, 40
+	local x, width, height = frame_width, taco_img:getWidth(), taco_img:getHeight()
 	--local y = frame_height/2
 	return {
 	wait_element = nil,
 	points = 20,
 	draw = function()
-		love.graphics.rectangle("line", x, y, width, height)
+		--love.graphics.rectangle("line", x, y, width, height)
+		love.graphics.draw(taco_img, x, y)
 	end,
 	update = coroutine.wrap(function (self, dt, index)
 		while true do
@@ -74,13 +77,14 @@ function newtaco(y, temp)
 end
 
 function newcucumber(y, temp) 
-	local x, width, height = frame_width, 10, 40
+	local x, width, height = frame_width, cucumber_img:getWidth(), cucumber_img:getHeight()
 	--local y = frame_height-(height+3)
 	return {
 	wait_element = nil,
 	points = -50,
 	draw = function()
-		love.graphics.rectangle("line", x, y, width, height)
+		--love.graphics.rectangle("line", x, y, width, height)
+		love.graphics.draw(cucumber_img, x, y)
 	end,
 	update = coroutine.wrap(function (self, dt, index)
 		while true do
@@ -117,6 +121,10 @@ end
 function love.load()
   math.randomseed(os.time())
   font1 = love.graphics.newFont("fonts/m04.TTF", 27)
+  cat_img = love.graphics.newImage("imgs/cat.png")
+  taco_img = love.graphics.newImage("imgs/taco.png")
+  cucumber_img = love.graphics.newImage("imgs/cucumber.png")
+
   cat = newcat() 
   --[[taco = newtaco() 
   cucumber = newcucumber() ]]--
