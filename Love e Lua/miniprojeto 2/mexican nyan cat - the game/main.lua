@@ -4,7 +4,6 @@ local active_elements = {}
 local curr_time = 0;
 
 
-
 function newcat ()
   local x, width, height = 100, cat_img:getWidth(), cat_img:getHeight()
   local y = frame_height-(height+3)
@@ -19,9 +18,7 @@ function newcat ()
   	return x, x+width, y, y+height
   end,
   draw = function () 
-    --love.graphics.rectangle("line", x, y, width, height)
     love.graphics.draw(cat_img, x, y)
-    --cat_img:getWidth(), cat_img:getHeight()
   end,
   update = function (dt)
   	if cat.y_velocity ~= 0 then
@@ -50,12 +47,10 @@ end
 
 function newtaco(y, temp) 
 	local x, width, height = frame_width, taco_img:getWidth(), taco_img:getHeight()
-	--local y = frame_height/2
 	return {
 	wait_element = nil,
 	points = 20,
 	draw = function()
-		--love.graphics.rectangle("line", x, y, width, height)
 		love.graphics.draw(taco_img, x, y)
 	end,
 	update = coroutine.wrap(function (self, dt, index)
@@ -78,12 +73,10 @@ end
 
 function newcucumber(y, temp) 
 	local x, width, height = frame_width, cucumber_img:getWidth(), cucumber_img:getHeight()
-	--local y = frame_height-(height+3)
 	return {
 	wait_element = nil,
 	points = -50,
 	draw = function()
-		--love.graphics.rectangle("line", x, y, width, height)
 		love.graphics.draw(cucumber_img, x, y)
 	end,
 	update = coroutine.wrap(function (self, dt, index)
@@ -93,7 +86,7 @@ function newcucumber(y, temp)
 		 		print("remove elemento de index igual a", index)
 		 		print(debug_percorre(active_elements))
 		 		table.remove(active_elements, index)
-		 		print("depois da remocao - qtd de elementos ativos",#active_elements)
+		 		print("depois da remocao - qtd de elementos ativos", #active_elements)
 		 	end
 		 	wait(temp/1000, self)
 		 end
@@ -126,8 +119,7 @@ function love.load()
   cucumber_img = love.graphics.newImage("imgs/cucumber.png")
 
   cat = newcat() 
-  --[[taco = newtaco() 
-  cucumber = newcucumber() ]]--
+
   create_elements()
 
   pick_active_elements = coroutine.wrap ( function ()
@@ -158,13 +150,8 @@ function love.draw()
   love.graphics.setColor(255,255,255)
   love.graphics.setFont(font1)
   love.graphics.print("Score: ".. cat.score, 16, 16)
+
   cat.draw()
- --[[if taco then 
-  	 taco.draw()
-  end
-  if cucumber then 
-  	cucumber.draw()
-  end]]--
 
   for i, element in ipairs(active_elements) do
   	if element then 
@@ -180,17 +167,10 @@ function is_empty(list)
 	return false
 end
 
-
 function love.update(dt)
 	curr_time = curr_time + dt
-	--print(cat.score)
+
 	if love.keyboard.isDown('right') then
-		--[[if taco then
-			taco:update(dt)
-		end
-		if cucumber then
-			cucumber:update(dt)
-		end]]--
 
 		if is_empty(active_elements) then
 			print("lista de elementos ativos eh vazia")
@@ -237,19 +217,4 @@ function love.update(dt)
 		end
 	end
 
-	--[[if cucumber then
-		local posx, posy = cucumber.pos()
-		if cat.affected(posx, posy) then
-			cat.score = cat.score - 50
-			cucumber = nil
-		end 
-	end
-
-	if taco then
-		posx, posy = taco.pos()
-		if cat.affected(posx, posy) then
-			cat.score = cat.score + 20
-			taco = nil
-		end
-	end]]--
 end
