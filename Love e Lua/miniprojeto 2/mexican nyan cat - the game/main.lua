@@ -1,6 +1,7 @@
 local frame_width, frame_height = love.graphics.getDimensions( )
 local elements = {}
 local active_elements = {}
+local curr_time = 0;
 
 
 
@@ -45,44 +46,54 @@ function newcat ()
 }
 end
 
-function newtaco(y) 
+function newtaco(y, temp) 
 	local x, width, height = frame_width, 50, 40
 	--local y = frame_height/2
 	return {
+	wait_element = nil,
 	points = 20,
 	draw = function()
 		love.graphics.rectangle("line", x, y, width, height)
 	end,
-	update = function (dt, index)
-		x = x - 3
-		if (x < 0) then
-			print("remove elemento de index igual a", index)
-	 		table.remove(active_elements, index)
-	 		print("depois da remocao - qtd de elementos ativos",#active_elements)
-	 	end
- 	end,
+	update = coroutine.wrap(function (self, dt, index)
+		while true do
+			x = x - 4
+			if (x < 0) then
+				print("remove elemento de index igual a", index)
+				print(debug_percorre(active_elements))
+		 		table.remove(active_elements, index)
+		 		print("depois da remocao - qtd de elementos ativos",#active_elements)
+		 	end
+		 	wait(temp/1000, self)
+		 end
+ 	end),
  	pos = function ()
  		return x+(width/2), y+(height/2)
  	end
 }
 end
 
-function newcucumber(y) 
+function newcucumber(y, temp) 
 	local x, width, height = frame_width, 10, 40
 	--local y = frame_height-(height+3)
 	return {
+	wait_element = nil,
 	points = -50,
 	draw = function()
 		love.graphics.rectangle("line", x, y, width, height)
 	end,
-	update = function (dt, index)
-	 	x = x - 3 
-	 	if (x < 0) then
-	 		print("remove elemento de index igual a", index)
-	 		table.remove(active_elements, index)
-	 		print("depois da remocao - qtd de elementos ativos",#active_elements)
-	 	end
-	end,
+	update = coroutine.wrap(function (self, dt, index)
+		while true do
+		 	x = x - 4 
+		 	if (x < 0) then
+		 		print("remove elemento de index igual a", index)
+		 		print(debug_percorre(active_elements))
+		 		table.remove(active_elements, index)
+		 		print("depois da remocao - qtd de elementos ativos",#active_elements)
+		 	end
+		 	wait(temp/1000, self)
+		 end
+	end),
 	pos = function ()
  		return x+(width/2), y+(height/2)
  	end
@@ -90,9 +101,22 @@ function newcucumber(y)
 }
 end
 
+function wait(temp, element)
+	element.wait_element = curr_time + temp
+	coroutine.yield()
+end
+
+function debug_percorre(list)
+	print("debug: imprimindo lista")
+	if next(list) then
+		print(list[i], i)
+	end
+end
+
 
 function love.load()
   math.randomseed(os.time())
+  font1 = love.graphics.newFont("fonts/m04.TTF", 27)
   cat = newcat() 
   --[[taco = newtaco() 
   cucumber = newcucumber() ]]--
@@ -113,15 +137,19 @@ end
 
 function create_elements()
 	for i = 1,10 do
-		elements[i] = newcucumber(math.random(5, frame_height-40+3))
+		elements[i] = newcucumber(math.random(5, frame_height-40+3), i+math.random(1, 10))
 	end
 	for i = 11, 25 do
-		elements[i] = newtaco(math.random(5, frame_height-40+3))
+		elements[i] = newtaco(math.random(5, frame_height-40+3), i+math.random(1, 10))
 	end
 	print("criei elementos", #elements)
 end
 
 function love.draw()
+  love.graphics.setBackgroundColor(152, 242, 234)
+  love.graphics.setColor(255,255,255)
+  love.graphics.setFont(font1)
+  love.graphics.print("Score: ".. cat.score, 16, 16)
   cat.draw()
  --[[if taco then 
   	 taco.draw()
@@ -146,6 +174,7 @@ end
 
 
 function love.update(dt)
+	curr_time = curr_time + dt
 	--print(cat.score)
 	if love.keyboard.isDown('right') then
 		--[[if taco then
@@ -163,7 +192,7 @@ function love.update(dt)
 			else
 				print("lista de elementos existentes n eh vazia - escolhe novos para ativos")
 				print("numero de elementos existentes", #elements)
-				num = math.random(#elements/4)
+				num = math.random(#elements/2)
 				print("quantidade de escolhidos", num)
 				for i = 1, num do
 					print("chamei a pick active", i)
@@ -173,8 +202,13 @@ function love.update(dt)
 		else 
 			print("lista de ativos nao eh vazia", #active_elements)
 			for i in ipairs(active_elements) do
-				if active_elements[i] then 
-					active_elements[i].update(dt, i)
+				if not active_elements[i].wait_element then
+					active_elements[i]:update(dt, i)
+				else
+					if(curr_time >= active_elements[i].wait_element) then
+						active_elements[i].wait_element = nil
+						active_elements[i]:update(dt, i)
+					end
 				end
 			end
 		end
