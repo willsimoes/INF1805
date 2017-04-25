@@ -21,16 +21,19 @@ function newcat ()
     love.graphics.draw(cat_img, x, y)
   end,
   update = function (dt)
+  	-- velocidade do eixo y do gato n eh zero, aplica o peso do pulo na posição e tambem o peso da gravidade na velocidade
   	if cat.y_velocity ~= 0 then
   		y = y + cat.y_velocity * dt          
 		cat.y_velocity = cat.y_velocity - cat.gravity * dt 
 	end
 	    
+	-- se a posição dele colidir com o chao, ele retornou ao chao - seta velocidade do eixo y para 0
     if y > cat.ground then    
 		cat.y_velocity = 0       
     	y = cat.ground    
 	end
 
+	-- se ele colidiu com o "teto", seta a posicao y no teto
 	if y < 0 then
 		y = 3
 	end
@@ -54,15 +57,23 @@ function newtaco(y, temp)
 		love.graphics.draw(taco_img, x, y)
 	end,
 	update = coroutine.wrap(function (self, dt, index)
+		print("update")
+		print("obj" , self)
+		print("dt" , dt)
+		print("index", index)
 		while true do
 			x = x - 4
 			if (x < 0) then
-				print("remove elemento de index igual a", index)
-				print(debug_percorre(active_elements))
+				print("remove elemento - qtd ativos", #active_elements)
+				print("obj" , self)
+				print("dt" , dt)
+				print("index", index)
+				print("pos", x)
+				--print(debug_percorre(active_elements))
 		 		table.remove(active_elements, index)
-		 		print("depois da remocao - qtd de elementos ativos",#active_elements)
+		 		print("depois da remocao - qtd de elementos ativos", #active_elements)
 		 	end
-		 	wait(temp/1000, self)
+		 	wait(temp/10000, self)
 		 end
  	end),
  	pos = function ()
@@ -80,15 +91,23 @@ function newcucumber(y, temp)
 		love.graphics.draw(cucumber_img, x, y)
 	end,
 	update = coroutine.wrap(function (self, dt, index)
+		print("update")
+		print("obj" , self)
+		print("dt" , dt)
+		print("index", index)
 		while true do
 		 	x = x - 4 
 		 	if (x < 0) then
-		 		print("remove elemento de index igual a", index)
-		 		print(debug_percorre(active_elements))
+		 		print("remove elemento - qtd ativos", #active_elements)
+				print("obj" , self)
+				print("dt" , dt)
+				print("index", index)
+				print("pos", x)
+				--print(debug_percorre(active_elements))
 		 		table.remove(active_elements, index)
 		 		print("depois da remocao - qtd de elementos ativos", #active_elements)
 		 	end
-		 	wait(temp/1000, self)
+		 	wait(temp/10000, self)
 		 end
 	end),
 	pos = function ()
@@ -99,14 +118,15 @@ function newcucumber(y, temp)
 end
 
 function wait(temp, element)
+	print(temp)
 	element.wait_element = curr_time + temp
 	coroutine.yield()
 end
 
 function debug_percorre(list)
-	print("debug: imprimindo lista")
+	--print("debug: imprimindo lista")
 	if next(list) then
-		print(list[i])
+		--print(list[i])
 	end
 end
 
@@ -132,7 +152,7 @@ function love.load()
 
   pick_active_elements = coroutine.wrap ( function ()
   							while true do
-  								print("entrei na pick_active_elements")
+  								--print("entrei na pick_active_elements")
   								local index = math.random(#elements)
   								local e = elements[index]
   								table.remove(elements, index)
@@ -150,7 +170,7 @@ function create_elements()
 	for i = 11, 25 do
 		elements[i] = newtaco(math.random(5, frame_height-taco_img:getHeight()+3), i+math.random(1, 10))
 	end
-	print("criei elementos", #elements)
+	--print("criei elementos", #elements)
 end
 
 function love.draw()
@@ -176,31 +196,35 @@ function love.update(dt)
 	if love.keyboard.isDown('right') then
 		if is_empty(active_elements) then
 			-- se lista de elementos ativos esta vazia, ainda ha elementos criados ainda nao usados?
-			print("lista de elementos ativos eh vazia")
+			--print("lista de elementos ativos eh vazia")
 			if is_empty(elements) then
 				-- se nao ha, cria novos elementos
-				print("lista de elementos existentes eh vazia")
+				--print("lista de elementos existentes eh vazia")
 				create_elements()
 			else
 				-- se ha, escolhe dentre os existentes, novos elementos ativos
-				print("lista de elementos existentes n eh vazia - escolhe novos para ativos")
-				print("numero de elementos existentes", #elements)
+				--print("lista de elementos existentes n eh vazia - escolhe novos para ativos")
+				--print("numero de elementos existentes", #elements)
 				num = math.random(#elements/2)
-				print("quantidade de escolhidos", num)
+				--print("quantidade de escolhidos", num)
 				for i = 1, num do
-					print("chamei a pick active", i)
+					--print("chamei a pick active", i)
 					pick_active_elements()
 				end
 			end
 		else 
 			-- se lista de elementos ativos nao eh vazia, chama update caso o elemento nao esteje em espera ou sua espera acabou
-			print("lista de ativos nao eh vazia", #active_elements)
+			--print("lista de ativos nao eh vazia", #active_elements)
 			for i in ipairs(active_elements) do
 				if not active_elements[i].wait_element then
 					active_elements[i]:update(dt, i)
 				else
 					if(curr_time >= active_elements[i].wait_element) then
 						active_elements[i].wait_element = nil
+						print("chamando update de elemento")
+						print("ele", active_elements[i])
+						print("dt", dt)
+						print("index", i)
 						active_elements[i]:update(dt, i)
 					end
 				end
