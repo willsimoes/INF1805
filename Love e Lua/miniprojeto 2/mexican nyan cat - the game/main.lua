@@ -106,20 +106,28 @@ end
 function debug_percorre(list)
 	print("debug: imprimindo lista")
 	if next(list) then
-		print(list[i], i)
+		print(list[i])
 	end
+end
+
+function is_empty(list)
+	if next(list) == nil then
+   		return true
+	end
+	return false
 end
 
 
 function love.load()
-  math.randomseed(os.time())
+  math.randomseed(os.time()) -- seta seed para pegar numeros randomicos
+  -- criacao das fontes e imagens
   font1 = love.graphics.newFont("fonts/m04.TTF", 27)
   cat_img = love.graphics.newImage("imgs/cat.png")
   taco_img = love.graphics.newImage("imgs/taco.png")
   cucumber_img = love.graphics.newImage("imgs/cucumber.png")
 
+  -- cria personagem e lista de elementos
   cat = newcat() 
-
   create_elements()
 
   pick_active_elements = coroutine.wrap ( function ()
@@ -137,47 +145,44 @@ end
 
 function create_elements()
 	for i = 1,10 do
-		elements[i] = newcucumber(math.random(5, frame_height-40+3), i+math.random(1, 10))
+		elements[i] = newcucumber(math.random(5, frame_height-cucumber_img:getHeight()+3), i+math.random(1, 10))
 	end
 	for i = 11, 25 do
-		elements[i] = newtaco(math.random(5, frame_height-40+3), i+math.random(1, 10))
+		elements[i] = newtaco(math.random(5, frame_height-taco_img:getHeight()+3), i+math.random(1, 10))
 	end
 	print("criei elementos", #elements)
 end
 
 function love.draw()
+  -- background e display do score
   love.graphics.setBackgroundColor(152, 242, 234)
   love.graphics.setColor(255,255,255)
   love.graphics.setFont(font1)
   love.graphics.print("Score: ".. cat.score, 16, 16)
 
+  -- desenha elementos ativos
   cat.draw()
 
   for i, element in ipairs(active_elements) do
-  	if element then 
+  	--if element then 
   		element.draw()
-  	end
+  	--end
   end
-end
-
-function is_empty(list)
-	if next(list) == nil then
-   		return true
-	end
-	return false
 end
 
 function love.update(dt)
 	curr_time = curr_time + dt
 
 	if love.keyboard.isDown('right') then
-
 		if is_empty(active_elements) then
+			-- se lista de elementos ativos esta vazia, ainda ha elementos criados ainda nao usados?
 			print("lista de elementos ativos eh vazia")
 			if is_empty(elements) then
+				-- se nao ha, cria novos elementos
 				print("lista de elementos existentes eh vazia")
 				create_elements()
 			else
+				-- se ha, escolhe dentre os existentes, novos elementos ativos
 				print("lista de elementos existentes n eh vazia - escolhe novos para ativos")
 				print("numero de elementos existentes", #elements)
 				num = math.random(#elements/2)
@@ -188,6 +193,7 @@ function love.update(dt)
 				end
 			end
 		else 
+			-- se lista de elementos ativos nao eh vazia, chama update caso o elemento nao esteje em espera ou sua espera acabou
 			print("lista de ativos nao eh vazia", #active_elements)
 			for i in ipairs(active_elements) do
 				if not active_elements[i].wait_element then
@@ -201,12 +207,14 @@ function love.update(dt)
 			end
 		end
 		
+	-- se o usuario aperto space, faz o gato pular
 	elseif love.keyboard.isDown('space') then
 		cat.y_velocity = cat.jump_height
 	end
 
 	cat.update(dt)
 
+	-- para cada elemento ativo, verifica se gato colidiu com o mesmo. se sim, remove elemento da lista de ativos e atualiza score
 	for i, element in ipairs(active_elements) do
 		if element then 
 			local posx, posy = element.pos()
