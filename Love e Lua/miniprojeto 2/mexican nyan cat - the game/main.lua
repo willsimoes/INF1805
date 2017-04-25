@@ -45,18 +45,20 @@ function newcat ()
 }
 end
 
-function newtaco() 
-	local x, width, height = frame_width, 50, 50
-	local y = frame_height/2
+function newtaco(y) 
+	local x, width, height = frame_width, 50, 40
+	--local y = frame_height/2
 	return {
 	points = 20,
 	draw = function()
 		love.graphics.rectangle("line", x, y, width, height)
 	end,
-	update = function (dt)
+	update = function (dt, index)
 		x = x - 3
 		if (x < 0) then
-	 		taco = nil
+			print("remove elemento de index igual a", index)
+	 		table.remove(active_elements, index)
+	 		print("depois da remocao - qtd de elementos ativos",#active_elements)
 	 	end
  	end,
  	pos = function ()
@@ -65,18 +67,20 @@ function newtaco()
 }
 end
 
-function newcucumber() 
+function newcucumber(y) 
 	local x, width, height = frame_width, 10, 40
-	local y = frame_height-(height+3)
+	--local y = frame_height-(height+3)
 	return {
 	points = -50,
 	draw = function()
 		love.graphics.rectangle("line", x, y, width, height)
 	end,
-	update = function (dt)
+	update = function (dt, index)
 	 	x = x - 3 
 	 	if (x < 0) then
-	 		cucumber = nil
+	 		print("remove elemento de index igual a", index)
+	 		table.remove(active_elements, index)
+	 		print("depois da remocao - qtd de elementos ativos",#active_elements)
 	 	end
 	end,
 	pos = function ()
@@ -94,25 +98,27 @@ function love.load()
   cucumber = newcucumber() ]]--
   create_elements()
 
-  pick_active_elements = coroutine.wrap ( function (num)
-  							for i = 1, num do
+  pick_active_elements = coroutine.wrap ( function ()
+  							while true do
+  								print("entrei na pick_active_elements")
   								local index = math.random(#elements)
   								local e = elements[index]
   								table.remove(elements, index)
-  								table.insert(active_alements, e)
+  								table.insert(active_elements, e)
+  								coroutine.yield()
 							end
-							coroutine.yield()
 						end)
 
 end
 
 function create_elements()
 	for i = 1,10 do
-		elements[i] = newcucumber()
+		elements[i] = newcucumber(math.random(5, frame_height-40+3))
 	end
 	for i = 11, 25 do
-		elements[i] = newtaco()
+		elements[i] = newtaco(math.random(5, frame_height-40+3))
 	end
+	print("criei elementos", #elements)
 end
 
 function love.draw()
@@ -132,7 +138,7 @@ function love.draw()
 end
 
 function is_empty(list)
-	if not next(list) nil then
+	if next(list) == nil then
    		return true
 	end
 	return false
@@ -140,6 +146,7 @@ end
 
 
 function love.update(dt)
+	--print(cat.score)
 	if love.keyboard.isDown('right') then
 		--[[if taco then
 			taco:update(dt)
@@ -149,15 +156,25 @@ function love.update(dt)
 		end]]--
 
 		if is_empty(active_elements) then
+			print("lista de elementos ativos eh vazia")
 			if is_empty(elements) then
+				print("lista de elementos existentes eh vazia")
 				create_elements()
 			else
-				pick_active_elements(math.random(1, #elements))
+				print("lista de elementos existentes n eh vazia - escolhe novos para ativos")
+				print("numero de elementos existentes", #elements)
+				num = math.random(#elements/4)
+				print("quantidade de escolhidos", num)
+				for i = 1, num do
+					print("chamei a pick active", i)
+					pick_active_elements()
+				end
 			end
 		else 
-			for i, element in ipairs(active_elements) do
-				if element then 
-					element:update(dt)
+			print("lista de ativos nao eh vazia", #active_elements)
+			for i in ipairs(active_elements) do
+				if active_elements[i] then 
+					active_elements[i].update(dt, i)
 				end
 			end
 		end
