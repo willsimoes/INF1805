@@ -23,7 +23,7 @@ function love.load()
 
   -- cria personagem e lista de elementos
   cat = newcat() 
-  create_static_elements()
+  --create_static_elements()
 end
 
 function create_static_elements () 
@@ -34,6 +34,7 @@ function create_static_elements ()
 end
 
 function create_moving_elements() 
+	print("criando elemenetos moving")
 	local j = math.random(4)
 	for i=1, j do
 		local random_type = element_type[math.random(#element_type)]
@@ -43,46 +44,38 @@ end
 
 
 function love.update(dt)
-	curr_time = curr_time + dt
+	local dis = -1
+	local right = love.keyboard.isDown('right')
+	local left = love.keyboard.isDown('left')
 
+	curr_time = curr_time + dt
 
 	if is_empty(static_elements) then 
 		create_static_elements()
 	end
 
-	local dis = 1
-	local right = love.keyboard.isDown('right')
-	local left = love.keyboard.isDown('left')
+	if is_empty(moving_elements) then
+		print("empty")
+		create_moving_elements()
+	else
+		print("updatando moving elements")
+		update_list_elements(dt, moving_elements, dis)
+	end
+
+	
 
 	if right or left then
-		if right then 	
-			dis = -1
+		if left then 	
+			dis = 1
 		end
-
 		-- se lista de elementos nao eh vazia, chama update caso o elemento nao esteje em espera ou sua espera acabou
-		for i in ipairs(static_elements) do	
-			if not static_elements[i].wait_element then
-				static_elements[i]:update(dt, i, dis*4)
-			elseif (curr_time >= static_elements[i].wait_element) then
-				static_elements[i].wait_element = nil
-				static_elements[i]:update(dt, i, dis*4)
-			end
-		end		
+		update_list_elements(dt, static_elements, dis)
 	-- se o usuario aperto space, faz o gato pular
 	elseif love.keyboard.isDown('space') then
 		cat.y_velocity = cat.jump_height
 	end
 
 	cat.update(dt)
-
-	if is_empty(moving_elements) then
-		create_moving_elements()
-	end
-
-	for i in ipairs(moving_elements) do
-		moving_elements[i]:update(dt, i*2, -1)
-	end
-
 
 	-- para cada elemento, verifica se gato colidiu com o mesmo. 
 	-- se sim, remove elemento da lista e atualiza score
@@ -101,6 +94,17 @@ function check_collision(list)
 				end
 		end
 	end
+end
+
+function update_list_elements (dt, list, dis)
+	for i in ipairs(list) do	
+		if not list[i].wait_element then
+			list[i]:update(dt, i, dis*4)
+		elseif (curr_time >= list[i].wait_element) then
+			list[i].wait_element = nil
+			list[i]:update(dt, i, dis*4)
+		end
+	end	
 end
 
 function love.draw()
@@ -179,6 +183,7 @@ function newelement(img, num_points)
 	update = coroutine.wrap ( function (self, dt, index, dis)
 		while true do
 		 	x = x + dis*index
+		 	print(x)
 		 	if (x < 0) then
 		 		if contains_value(moving_elements, self) then
 		 			table.remove(moving_elements, index)
@@ -214,6 +219,5 @@ function contains_value(list, val)
             return true
         end
     end
-
     return false
 end
