@@ -1,8 +1,126 @@
 local frame_width, frame_height = love.graphics.getDimensions( )
-local elements = {}
-local active_elements = {}
+local static_elements = {}
+local moving_elements = {}
+local element_type = {}
 local curr_time = 0;
 
+
+function love.load()
+  math.randomseed(os.time()) -- seta seed para pegar numeros randomicos
+  math.random(); math.random(); math.random()
+  -- criacao das fontes e imagens
+  font1 = love.graphics.newFont("fonts/m04.TTF", 27)
+
+  cat_img = love.graphics.newImage("imgs/cat.png")
+
+  taco_img = love.graphics.newImage("imgs/taco.png")
+  cucumber_img = love.graphics.newImage("imgs/cucumber.png")
+  chili_img = love.graphics.newImage("imgs/chili.png")
+
+  element_type[1] = {taco_img, 30}
+  element_type[2] = {cucumber_img, -40}
+  element_type[3] = {chili_img, 60}
+
+  -- cria personagem e lista de elementos
+  cat = newcat() 
+  create_static_elements()
+end
+
+function create_static_elements () 
+	for i = 1, math.random(6) do
+		local random_type = element_type[math.random(#element_type)]
+		static_elements[i] = newelement(random_type[1], random_type[2])
+	end
+end
+
+function create_moving_elements() 
+	local j = math.random(4)
+	for i=1, j do
+		local random_type = element_type[math.random(#element_type)]
+		moving_elements[i] = newelement(random_type[1], random_type[2])
+	end
+end
+
+
+function love.update(dt)
+	curr_time = curr_time + dt
+
+
+	if is_empty(static_elements) then 
+		create_static_elements()
+	end
+
+	local dis = 1
+	local right = love.keyboard.isDown('right')
+	local left = love.keyboard.isDown('left')
+
+	if right or left then
+		if right then 	
+			dis = -1
+		end
+
+		-- se lista de elementos nao eh vazia, chama update caso o elemento nao esteje em espera ou sua espera acabou
+		for i in ipairs(static_elements) do	
+			if not static_elements[i].wait_element then
+				static_elements[i]:update(dt, i, dis*4)
+			elseif (curr_time >= static_elements[i].wait_element) then
+				static_elements[i].wait_element = nil
+				static_elements[i]:update(dt, i, dis*4)
+			end
+		end		
+	-- se o usuario aperto space, faz o gato pular
+	elseif love.keyboard.isDown('space') then
+		cat.y_velocity = cat.jump_height
+	end
+
+	cat.update(dt)
+
+	if is_empty(moving_elements) then
+		create_moving_elements()
+	end
+
+	for i in ipairs(moving_elements) do
+		moving_elements[i]:update(dt, i*2, -1)
+	end
+
+
+	-- para cada elemento, verifica se gato colidiu com o mesmo. 
+	-- se sim, remove elemento da lista e atualiza score
+	check_collision(static_elements)
+	check_collision(moving_elements)
+
+end
+
+function check_collision(list)
+	for i, element in ipairs(list) do
+		if element then
+			local posx, posy = element.pos()
+				if cat.affected(posx, posy) then
+					cat.score = cat.score + element.points
+					table.remove(list, i)
+				end
+		end
+	end
+end
+
+function love.draw()
+  -- background e display do score
+  love.graphics.setBackgroundColor(152, 242, 234)
+  love.graphics.setColor(255,255,255)
+  love.graphics.setFont(font1)
+  love.graphics.print("Score: ".. cat.score, 16, 16)
+
+  -- desenha elementos ativos
+  cat.draw()
+
+  for i in ipairs(static_elements) do
+  	static_elements[i].draw()
+  end
+
+  for i in ipairs(moving_elements) do
+  	moving_elements[i].draw()
+  end
+end
 
 function newcat ()
   local x, width, height = 100, cat_img:getWidth(), cat_img:getHeight()
@@ -38,6 +156,7 @@ function newcat ()
 		y = 3
 	end
   end,
+  -- verifica se o gato colidiu com o elemento de posx e posy
   affected = function (posx, posy) 
   	if posx>x and posx<x+width and posy>y and posy<y+height then
   		return true
@@ -48,53 +167,27 @@ function newcat ()
 }
 end
 
-function newtaco(y, temp) 
-	local x, width, height = frame_width, taco_img:getWidth(), taco_img:getHeight()
+function newelement(img, num_points) 
+	local x, width, height = frame_width, img:getWidth(), img:getHeight()
+	local y = math.random(3,frame_height-height)
 	return {
 	wait_element = nil,
-	points = 20,
+	points = num_points,
 	draw = function()
-		love.graphics.draw(taco_img, x, y)
+		love.graphics.draw(img, x, y)
 	end,
-	update = coroutine.wrap(function (self, dt, index)
-		print("update")
-		print("obj" , self)
-		print("dt" , dt)
-		print("index", index)
+	update = coroutine.wrap ( function (self, dt, index, dis)
 		while true do
-			x = x - 4
-			if (x < 0) then
-		 		table.remove(active_elements, index)
-		 	end
-		 	wait(temp/10000, self)
-		 end
- 	end),
- 	pos = function ()
- 		return x+(width/2), y+(height/2)
- 	end
-}
-end
-
-function newcucumber(y, temp) 
-	local x, width, height = frame_width, cucumber_img:getWidth(), cucumber_img:getHeight()
-	return {
-	wait_element = nil,
-	points = -50,
-	draw = function()
-		love.graphics.draw(cucumber_img, x, y)
-	end,
-	update = coroutine.wrap(function (self, dt, index)
-		print("update")
-		print("obj" , self)
-		print("dt" , dt)
-		print("index", index)
-		while true do
-		 	x = x - 4 
+		 	x = x + dis*index
 		 	if (x < 0) then
-		 		table.remove(active_elements, index)
+		 		if contains_value(moving_elements, self) then
+		 			table.remove(moving_elements, index)
+		 		else
+		 			table.remove(static_elements, index)
+		 		end
 		 	end
-		 	wait(temp/10000, self)
-		 end
+		 	_, _, index, dis = wait(index/1000, self)
+		end
 	end),
 	pos = function ()
  		return x+(width/2), y+(height/2)
@@ -104,9 +197,8 @@ function newcucumber(y, temp)
 end
 
 function wait(temp, element)
-	print(temp)
 	element.wait_element = curr_time + temp
-	coroutine.yield()
+	return coroutine.yield()
 end
 
 function is_empty(list)
@@ -116,103 +208,12 @@ function is_empty(list)
 	return false
 end
 
+function contains_value(list, val)
+	for index, value in ipairs(list) do
+        if value == val then
+            return true
+        end
+    end
 
-function love.load()
-  math.randomseed(os.time()) -- seta seed para pegar numeros randomicos
-  -- criacao das fontes e imagens
-  font1 = love.graphics.newFont("fonts/m04.TTF", 27)
-  cat_img = love.graphics.newImage("imgs/cat.png")
-  taco_img = love.graphics.newImage("imgs/taco.png")
-  cucumber_img = love.graphics.newImage("imgs/cucumber.png")
-
-  -- cria personagem e lista de elementos
-  cat = newcat() 
-  create_elements()
-
-  pick_active_elements = coroutine.wrap ( function ()
-  							while true do
-  								local index = math.random(#elements)
-  								local e = elements[index]
-  								table.remove(elements, index)
-  								table.insert(active_elements, e)
-  								coroutine.yield()
-							end
-						end)
-
-end
-
-function create_elements()
-	for i = 1,10 do
-		elements[i] = newcucumber(math.random(5, frame_height-cucumber_img:getHeight()+3), i+math.random(1, 10))
-	end
-	for i = 11, 25 do
-		elements[i] = newtaco(math.random(5, frame_height-taco_img:getHeight()+3), i+math.random(1, 10))
-	end
-end
-
-function love.draw()
-  -- background e display do score
-  love.graphics.setBackgroundColor(152, 242, 234)
-  love.graphics.setColor(255,255,255)
-  love.graphics.setFont(font1)
-  love.graphics.print("Score: ".. cat.score, 16, 16)
-
-  -- desenha elementos ativos
-  cat.draw()
-
-  for i, element in ipairs(active_elements) do
-  	--if element then 
-  		element.draw()
-  	--end
-  end
-end
-
-function love.update(dt)
-	curr_time = curr_time + dt
-
-	if love.keyboard.isDown('right') then
-		if is_empty(active_elements) then
-			-- se lista de elementos ativos esta vazia, ainda ha elementos criados ainda nao usados?
-			if is_empty(elements) then
-				-- se nao ha, cria novos elementos
-				create_elements()
-			else
-				-- se ha, escolhe dentre os existentes, novos elementos ativos
-				num = math.random(#elements/2)
-				for i = 1, num do
-					pick_active_elements()
-				end
-			end
-		else 
-			-- se lista de elementos ativos nao eh vazia, chama update caso o elemento nao esteje em espera ou sua espera acabou
-			for i in ipairs(active_elements) do
-				if not active_elements[i].wait_element then
-					active_elements[i]:update(dt, i)
-				else
-					if(curr_time >= active_elements[i].wait_element) then
-						active_elements[i].wait_element = nil
-						active_elements[i]:update(dt, i)
-					end
-				end
-			end
-		end
-		
-	-- se o usuario aperto space, faz o gato pular
-	elseif love.keyboard.isDown('space') then
-		cat.y_velocity = cat.jump_height
-	end
-
-	cat.update(dt)
-
-	-- para cada elemento ativo, verifica se gato colidiu com o mesmo. se sim, remove elemento da lista de ativos e atualiza score
-	for i, element in ipairs(active_elements) do
-		if element then 
-			local posx, posy = element.pos()
-			if cat.affected(posx, posy) then
-				cat.score = cat.score + element.points
-				table.remove(active_elements, i)
-			end
-		end
-	end
-
+    return false
 end
