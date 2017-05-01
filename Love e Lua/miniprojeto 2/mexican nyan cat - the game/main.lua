@@ -2,30 +2,41 @@ local frame_width, frame_height = love.graphics.getDimensions( )
 local static_elements = {}
 local moving_elements = {}
 local element_type = {}
-local curr_time = 0;
+local curr_time = 0
 
 
 function love.load()
-  math.randomseed(os.time()) -- seta seed para pegar numeros randomicos
+  -- seta seed para pegar numeros randomicos
+  math.randomseed(os.time()) 
   math.random(); math.random(); math.random()
-  -- criacao das fontes e imagens
+
+  -- flag de pausa
+  pause = false
+
+  -- flag de gameOver
+  gameOver = false
+
+  -- fonte do jogo
   font1 = love.graphics.newFont("fonts/m04.TTF", 27)
 
+  -- imagens
   cat_img = love.graphics.newImage("imgs/cat.png")
-
   taco_img = love.graphics.newImage("imgs/taco.png")
   cucumber_img = love.graphics.newImage("imgs/cucumber.png")
   chili_img = love.graphics.newImage("imgs/chili.png")
+  fullheart_img = love.graphics.newImage("imgs/fullheart.png")
+  emptyheart_img = love.graphics.newImage("imgs/emptyheart.png")
 
+  --tipos de elementos: imagem e pontuação
   element_type[1] = {taco_img, 30}
-  element_type[2] = {cucumber_img, -40}
+  element_type[2] = {cucumber_img, -50}
   element_type[3] = {chili_img, 60}
 
-  -- cria personagem e lista de elementos
+  -- cria jogador
   cat = newcat() 
-  --create_static_elements()
 end
 
+-- criaçao de elementos estaticos
 function create_static_elements () 
 	for i = 1, math.random(6) do
 		local random_type = element_type[math.random(#element_type)]
@@ -33,9 +44,9 @@ function create_static_elements ()
 	end
 end
 
+-- criacao de elementos dinamicos
 function create_moving_elements() 
-	print("criando elemenetos moving")
-	local j = math.random(4)
+	local j = math.random(5)
 	for i=1, j do
 		local random_type = element_type[math.random(#element_type)]
 		moving_elements[i] = newelement(random_type[1], random_type[2])
@@ -44,58 +55,69 @@ end
 
 
 function love.update(dt)
-	local dis = -1
-	local right = love.keyboard.isDown('right')
-	local left = love.keyboard.isDown('left')
+	if not pause then
+		local dis = -1
+		local right = love.keyboard.isDown('right')
+		local left = love.keyboard.isDown('left')
 
-	curr_time = curr_time + dt
+		curr_time = curr_time + dt
 
-	if is_empty(static_elements) then 
-		create_static_elements()
-	end
-
-	if is_empty(moving_elements) then
-		print("empty")
-		create_moving_elements()
-	else
-		print("updatando moving elements")
-		update_list_elements(dt, moving_elements, dis)
-	end
-
-	
-
-	if right or left then
-		if left then 	
-			dis = 1
+		if cat.hearts == 0 then
+			gameOver = true
 		end
-		-- se lista de elementos nao eh vazia, chama update caso o elemento nao esteje em espera ou sua espera acabou
-		update_list_elements(dt, static_elements, dis)
-	-- se o usuario aperto space, faz o gato pular
-	elseif love.keyboard.isDown('space') then
-		cat.y_velocity = cat.jump_height
+
+		-- update e criacao de elementos
+		if is_empty(static_elements) then 
+			create_static_elements()
+		end
+
+		if is_empty(moving_elements) then
+			create_moving_elements()
+		else
+			update_list_elements(dt, moving_elements, dis)
+		end
+
+		if right or left then
+			if left then 	
+				dis = 1
+			end
+			-- se lista de elementos nao eh vazia, chama update caso o elemento nao esteje em espera ou sua espera acabou
+			update_list_elements(dt, static_elements, dis)
+		-- se o usuario aperto space, faz o gato pular
+		elseif love.keyboard.isDown('space') then
+			cat.y_velocity = cat.jump_height
+		end
+
+		cat.update(dt)
+
+		-- para cada elemento, verifica se gato colidiu com o mesmo
+		check_collision(static_elements)
+		check_collision(moving_elements)
 	end
-
-	cat.update(dt)
-
-	-- para cada elemento, verifica se gato colidiu com o mesmo. 
-	-- se sim, remove elemento da lista e atualiza score
-	check_collision(static_elements)
-	check_collision(moving_elements)
-
+	if gameOver then
+		pauseAndOver()
+	end
 end
 
+
+-- função que verifica se gato colidiu com algum elemento. se sim, atualiza score  se for pepino tira uma vida
 function check_collision(list)
 	for i, element in ipairs(list) do
 		if element then
 			local posx, posy = element.pos()
 				if cat.affected(posx, posy) then
 					cat.score = cat.score + element.points
+					-- verifica se elemento é um pepino
+					if(element.points == element_type[2][2]) then
+						cat.hearts = cat.hearts - 1
+					end
 					table.remove(list, i)
 				end
 		end
 	end
 end
 
+-- chama update de elementos que já podem ser atualziados
 function update_list_elements (dt, list, dis)
 	for i in ipairs(list) do	
 		if not list[i].wait_element then
@@ -108,22 +130,43 @@ function update_list_elements (dt, list, dis)
 end
 
 function love.draw()
-  -- background e display do score
-  love.graphics.setBackgroundColor(152, 242, 234)
-  love.graphics.setColor(255,255,255)
-  love.graphics.setFont(font1)
-  love.graphics.print("Score: ".. cat.score, 16, 16)
+	if not gameOver then
+		-- fundo e score
+		love.graphics.setBackgroundColor(152, 242, 234)
+		love.graphics.setColor(255,255,255)
+		love.graphics.setFont(font1)
+		love.graphics.print("Score: ".. cat.score, 16, 16)
 
-  -- desenha elementos ativos
-  cat.draw()
+		-- logica para desenhar vidas
+		local x = frame_width-fullheart_img:getWidth()
+		local y = 3
+		for i = 1, cat.hearts do
+		love.graphics.draw(fullheart_img, x, y)
+		x = x-fullheart_img:getWidth()
+		end
+		local cont = 7-cat.hearts
+		while cont ~= 0 and cat.hearts > 0 do
+			love.graphics.draw(emptyheart_img, x, y)
+			x = x-fullheart_img:getWidth()
+			cont = cont - 1
+		end
 
-  for i in ipairs(static_elements) do
-  	static_elements[i].draw()
-  end
+		-- jogador
+		cat.draw()
 
-  for i in ipairs(moving_elements) do
-  	moving_elements[i].draw()
-  end
+		-- elementos
+		for i in ipairs(static_elements) do
+			static_elements[i].draw()
+		end
+
+		for i in ipairs(moving_elements) do
+			moving_elements[i].draw()
+		end
+	else 
+		-- se flag de gameOver for true, renderiza mensagem
+  		love.graphics.setBackgroundColor(0, 0, 0, 0.6)
+  		love.graphics.print("Game Over", frame_width/2-125, frame_height/2)
+	end
 end
 
 function newcat ()
@@ -132,6 +175,7 @@ function newcat ()
 
   return {
   score = 0,
+  hearts = 1,
   ground = y,
   y_velocity = 0,
   jump_height = -300,
@@ -183,8 +227,8 @@ function newelement(img, num_points)
 	update = coroutine.wrap ( function (self, dt, index, dis)
 		while true do
 		 	x = x + dis*index
-		 	print(x)
 		 	if (x < 0) then
+		 		-- verifica qual lista de elementos ele pertence para entao remove-lo
 		 		if contains_value(moving_elements, self) then
 		 			table.remove(moving_elements, index)
 		 		else
@@ -206,6 +250,7 @@ function wait(temp, element)
 	return coroutine.yield()
 end
 
+-- indica se uma table esta vazia
 function is_empty(list)
 	if next(list) == nil then
    		return true
@@ -213,6 +258,8 @@ function is_empty(list)
 	return false
 end
 
+
+-- indica se uma table contem um valor
 function contains_value(list, val)
 	for index, value in ipairs(list) do
         if value == val then
@@ -220,4 +267,20 @@ function contains_value(list, val)
         end
     end
     return false
+end
+
+-- funcao de gameOver que pausa e espera pela tecla esc para finalizar o jogo
+function pauseAndOver () 
+	pause = true
+	--music:stop()
+	if love.keyboard.isDown("escape") then
+		love.event.quit()
+	end
+end
+
+-- callback para pausar jogo
+function love.keyreleased( key )
+	if key == "p" then
+		pause = not pause
+	end
 end
