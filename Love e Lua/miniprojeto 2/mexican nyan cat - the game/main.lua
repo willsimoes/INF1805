@@ -32,7 +32,6 @@ function love.load()
   backgroundSong = love.audio.newSource("audio/background.wav")
   backgroundSong:play()
   backgroundSong:setLooping(true)
-
   overSong = love.audio.newSource("audio/over.wav", "static")
 
   --tipos de elementos: imagem e pontuação
@@ -43,26 +42,9 @@ function love.load()
   -- cria jogador
   cat = newcat() 
 
+  -- cria nuvens do background
   create_clouds()
 end
-
--- criaçao de elementos estaticos
-function create_static_elements () 
-	for i = 1, math.random(6) do
-		local random_type = element_type[math.random(#element_type)]
-		static_elements[i] = newelement(random_type[1], random_type[2])
-	end
-end
-
--- criacao de elementos dinamicos
-function create_moving_elements() 
-	local j = math.random(5)
-	for i=1, j do
-		local random_type = element_type[math.random(#element_type)]
-		moving_elements[i] = newelement(random_type[1], random_type[2])
-	end
-end
-
 
 function love.update(dt)
 	if not pause then
@@ -112,6 +94,67 @@ function love.update(dt)
 	end
 end
 
+function love.draw()
+	if not gameOver then
+		-- fundo e score
+		love.graphics.setBackgroundColor(152, 242, 234)
+		love.graphics.setColor(255,255,255)
+		love.graphics.setFont(font1)
+		love.graphics.print("Score: ".. cat.score, 16, 16)
+
+		-- desenha nuvens do background
+		cloud1.draw()
+		cloud2.draw()
+
+		-- logica para desenhar as vidas
+		local x = frame_width-fullheart_img:getWidth()
+		local y = 3
+		for i = 1, cat.hearts do
+			love.graphics.draw(fullheart_img, x, y)
+			x = x-fullheart_img:getWidth()
+		end
+		local cont = 7-cat.hearts
+		while cont ~= 0 and cat.hearts > 0 do
+			love.graphics.draw(emptyheart_img, x, y)
+			x = x-fullheart_img:getWidth()
+			cont = cont - 1
+		end
+
+		-- jogador
+		cat.draw()
+
+		-- elementos
+		for i in ipairs(static_elements) do
+			static_elements[i].draw()
+		end
+
+		for i in ipairs(moving_elements) do
+			moving_elements[i].draw()
+		end
+	else 
+		-- se flag de gameOver for true, desenha tela de gameOver
+  		love.graphics.setBackgroundColor(0, 0, 0, 0.6)
+  		love.graphics.print("Game Over", frame_width/2-125, frame_height/2)
+  		
+	end
+end
+
+-- criaçao de elementos estaticos
+function create_static_elements () 
+	for i = 1, math.random(6) do
+		local random_type = element_type[math.random(#element_type)]
+		static_elements[i] = newelement(random_type[1], random_type[2])
+	end
+end
+
+-- criacao de elementos dinamicos
+function create_moving_elements() 
+	local j = math.random(5)
+	for i=1, j do
+		local random_type = element_type[math.random(#element_type)]
+		moving_elements[i] = newelement(random_type[1], random_type[2])
+	end
+end
 
 -- função que verifica se gato colidiu com algum elemento. se sim, atualiza score  se for pepino tira uma vida
 function check_collision(list)
@@ -142,49 +185,6 @@ function update_list_elements (dt, list, dis)
 	end	
 end
 
-function love.draw()
-	if not gameOver then
-		-- fundo e score
-		love.graphics.setBackgroundColor(152, 242, 234)
-		love.graphics.setColor(255,255,255)
-		love.graphics.setFont(font1)
-		love.graphics.print("Score: ".. cat.score, 16, 16)
-
-		cloud1.draw()
-		cloud2.draw()
-
-		-- logica para desenhar vidas
-		local x = frame_width-fullheart_img:getWidth()
-		local y = 3
-		for i = 1, cat.hearts do
-		love.graphics.draw(fullheart_img, x, y)
-		x = x-fullheart_img:getWidth()
-		end
-		local cont = 7-cat.hearts
-		while cont ~= 0 and cat.hearts > 0 do
-			love.graphics.draw(emptyheart_img, x, y)
-			x = x-fullheart_img:getWidth()
-			cont = cont - 1
-		end
-
-		-- jogador
-		cat.draw()
-
-		-- elementos
-		for i in ipairs(static_elements) do
-			static_elements[i].draw()
-		end
-
-		for i in ipairs(moving_elements) do
-			moving_elements[i].draw()
-		end
-	else 
-		-- se flag de gameOver for true, renderiza mensagem
-  		love.graphics.setBackgroundColor(0, 0, 0, 0.6)
-  		love.graphics.print("Game Over", frame_width/2-125, frame_height/2)
-  		
-	end
-end
 
 function newcat ()
   local x, width, height = 100, cat_img:getWidth(), cat_img:getHeight()
@@ -192,7 +192,7 @@ function newcat ()
 
   return {
   score = 0,
-  hearts = 1,
+  hearts = 7,
   ground = y,
   y_velocity = 0,
   jump_height = -300,
@@ -232,30 +232,6 @@ function newcat ()
 }
 end
 
-function cloud(img, x, y) 
-	local width, height = img:getWidth(), img:getHeight()
-	local original_x = x
-	return {
-	draw = function()
-		love.graphics.draw(img, x, y)
-	end,
-	update = function(self, dis)
-		print(dis)
-		x = x + dis*5
-		print(x)
-		if x < 0 then
-			x = original_x
-		end
-	end
-	}
- end
-
- function create_clouds()
- 	local x = frame_width
- 	local y = cloud_img:getHeight()+10
- 	cloud1 = cloud(cloud_img, x, y)
- 	cloud2 = cloud(cloud_img, x+200, y+250)
- end
 
 function newelement(img, num_points) 
 	local x, width, height = frame_width, img:getWidth(), img:getHeight()
@@ -283,9 +259,31 @@ function newelement(img, num_points)
 	pos = function ()
  		return x+(width/2), y+(height/2)
  	end
-
-}
+	}
 end
+
+function cloud(img, x, y) 
+	local width, height = img:getWidth(), img:getHeight()
+	local original_x = x
+	return {
+	draw = function()
+		love.graphics.draw(img, x, y)
+	end,
+	update = function(self, dis)
+		x = x + dis*5
+		if x < 0 then
+			x = original_x
+		end
+	end
+	}
+ end
+
+ function create_clouds()
+ 	local x = frame_width
+ 	local y = cloud_img:getHeight()+10
+ 	cloud1 = cloud(cloud_img, x, y)
+ 	cloud2 = cloud(cloud_img, x+200, y+250)
+ end
 
 function wait(temp, element)
 	element.wait_element = curr_time + temp
