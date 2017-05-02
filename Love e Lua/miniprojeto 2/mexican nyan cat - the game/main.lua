@@ -26,6 +26,14 @@ function love.load()
   chili_img = love.graphics.newImage("imgs/chili.png")
   fullheart_img = love.graphics.newImage("imgs/fullheart.png")
   emptyheart_img = love.graphics.newImage("imgs/emptyheart.png")
+  cloud_img = love.graphics.newImage("imgs/cloud.png")
+
+  -- sons
+  backgroundSong = love.audio.newSource("audio/background.wav")
+  backgroundSong:play()
+  backgroundSong:setLooping(true)
+
+  overSong = love.audio.newSource("audio/over.wav", "static")
 
   --tipos de elementos: imagem e pontuação
   element_type[1] = {taco_img, 30}
@@ -34,6 +42,8 @@ function love.load()
 
   -- cria jogador
   cat = newcat() 
+
+  create_clouds()
 end
 
 -- criaçao de elementos estaticos
@@ -64,6 +74,7 @@ function love.update(dt)
 
 		if cat.hearts == 0 then
 			gameOver = true
+			overSong:play()
 		end
 
 		-- update e criacao de elementos
@@ -83,6 +94,8 @@ function love.update(dt)
 			end
 			-- se lista de elementos nao eh vazia, chama update caso o elemento nao esteje em espera ou sua espera acabou
 			update_list_elements(dt, static_elements, dis)
+			cloud1:update(dis)
+ 			cloud2:update(dis)
 		-- se o usuario aperto space, faz o gato pular
 		elseif love.keyboard.isDown('space') then
 			cat.y_velocity = cat.jump_height
@@ -137,6 +150,9 @@ function love.draw()
 		love.graphics.setFont(font1)
 		love.graphics.print("Score: ".. cat.score, 16, 16)
 
+		cloud1.draw()
+		cloud2.draw()
+
 		-- logica para desenhar vidas
 		local x = frame_width-fullheart_img:getWidth()
 		local y = 3
@@ -166,6 +182,7 @@ function love.draw()
 		-- se flag de gameOver for true, renderiza mensagem
   		love.graphics.setBackgroundColor(0, 0, 0, 0.6)
   		love.graphics.print("Game Over", frame_width/2-125, frame_height/2)
+  		
 	end
 end
 
@@ -179,7 +196,7 @@ function newcat ()
   ground = y,
   y_velocity = 0,
   jump_height = -300,
-  gravity = -500,
+  gravity = -900,
   pos = function () 
   	return x, x+width, y, y+height
   end,
@@ -214,6 +231,31 @@ function newcat ()
   end
 }
 end
+
+function cloud(img, x, y) 
+	local width, height = img:getWidth(), img:getHeight()
+	local original_x = x
+	return {
+	draw = function()
+		love.graphics.draw(img, x, y)
+	end,
+	update = function(self, dis)
+		print(dis)
+		x = x + dis*5
+		print(x)
+		if x < 0 then
+			x = original_x
+		end
+	end
+	}
+ end
+
+ function create_clouds()
+ 	local x = frame_width
+ 	local y = cloud_img:getHeight()+10
+ 	cloud1 = cloud(cloud_img, x, y)
+ 	cloud2 = cloud(cloud_img, x+200, y+250)
+ end
 
 function newelement(img, num_points) 
 	local x, width, height = frame_width, img:getWidth(), img:getHeight()
@@ -272,7 +314,7 @@ end
 -- funcao de gameOver que pausa e espera pela tecla esc para finalizar o jogo
 function pauseAndOver () 
 	pause = true
-	--music:stop()
+	backgroundSong:pause()
 	if love.keyboard.isDown("escape") then
 		love.event.quit()
 	end
