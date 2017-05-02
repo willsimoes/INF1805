@@ -54,6 +54,7 @@ function love.update(dt)
 
 		curr_time = curr_time + dt
 
+		-- game over se nao tem mais vida
 		if cat.hearts == 0 then
 			gameOver = true
 			overSong:play()
@@ -69,7 +70,8 @@ function love.update(dt)
 		else
 			update_list_elements(dt, moving_elements, dis)
 		end
-
+		
+		-- locomocao de jogador e elementos estaticos
 		if right or left then
 			if left then 	
 				dis = 1
