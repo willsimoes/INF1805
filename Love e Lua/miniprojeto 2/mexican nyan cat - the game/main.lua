@@ -55,7 +55,7 @@ function love.update(dt)
 		curr_time = curr_time + dt
 
 		-- game over se nao tem mais vida
-		if cat.hearts == 0 then
+		if cat.lives == 0 then
 			gameOver = true
 			overSong:play()
 		end
@@ -108,15 +108,16 @@ function love.draw()
 		cloud1.draw()
 		cloud2.draw()
 
-		-- logica para desenhar as vidas
+		-- vidas restantes
 		local x = frame_width-fullheart_img:getWidth()
 		local y = 3
-		for i = 1, cat.hearts do
+		for i = 1, cat.lives do
 			love.graphics.draw(fullheart_img, x, y)
 			x = x-fullheart_img:getWidth()
 		end
-		local cont = 7-cat.hearts
-		while cont ~= 0 and cat.hearts > 0 do
+		-- vidas perdidas
+		local cont = 7-cat.lives
+		while cont ~= 0 and cat.lives > 0 do
 			love.graphics.draw(emptyheart_img, x, y)
 			x = x-fullheart_img:getWidth()
 			cont = cont - 1
@@ -136,8 +137,7 @@ function love.draw()
 	else 
 		-- se flag de gameOver for true, desenha tela de gameOver
   		love.graphics.setBackgroundColor(0, 0, 0, 0.6)
-  		love.graphics.print("Game Over", frame_width/2-125, frame_height/2)
-  		
+  		love.graphics.print("Game Over", frame_width/2-125, frame_height/2)	
 	end
 end
 
@@ -164,10 +164,11 @@ function check_collision(list)
 		if element then
 			local posx, posy = element.pos()
 				if cat.affected(posx, posy) then
+					-- incrementa score
 					cat.score = cat.score + element.points
 					-- verifica se elemento é um pepino
 					if(element.points == element_type[2][2]) then
-						cat.hearts = cat.hearts - 1
+						cat.lives = cat.lives - 1
 					end
 					table.remove(list, i)
 				end
@@ -194,7 +195,7 @@ function newcat ()
 
   return {
   score = 0,
-  hearts = 7,
+  lives = 7,
   ground = y,
   y_velocity = 0,
   jump_height = -300,
