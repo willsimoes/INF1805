@@ -74,10 +74,10 @@ function receiver(sck, request)
 <h1><u>PUC Rio - Sistemas Reativos</u></h1>
 <h2><i>ESP8266 Web Server</i></h2>
         <p>Temperatura: $TEMP oC <a href="?pin=LERTEMP"><button><b>REFRESH</b></button></a>
-        <p>LED 1: $LED1  :  <a href="?pin=PISCA1"><button><b>ON</b></button></a>
-                            <a href="?pin=PARA1"><button><b>OFF</b></button></a></p>
-        <p>LED 2: $LED2  :  <a href="?pin=PISCA2"><button><b>ON</b></button></a>
-                            <a href="?pin=PARA2"><button><b>OFF</b></button></a></p>
+        <p>LED 1: $LED1  :  <a href="?pin=PISCA1"><button><b>PISCAR</b></button></a>
+                            <a href="?pin=PARA1"><button><b>PARAR</b></button></a></p>
+        <p>LED 2: $LED2  :  <a href="?pin=PISCA2"><button><b>PISCAR</b></button></a>
+                            <a href="?pin=PARA2"><button><b>PARAR</b></button></a></p>
 ]]
 
   buf = string.gsub(buf, "$(%w+)", vals)
