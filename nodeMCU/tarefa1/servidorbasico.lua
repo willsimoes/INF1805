@@ -3,11 +3,16 @@ led2 = 6
 sw1 = 1
 sw2 = 2
 
+-- definição dos leds e botões
 gpio.mode(led1, gpio.OUTPUT)
 gpio.mode(led2, gpio.OUTPUT)
 gpio.mode(sw1, gpio.INPUT)
 gpio.mode(sw2, gpio.INPUT)
 
+led_um = newled(led1)
+led_dois = newled(led2)
+
+-- leds desligados
 gpio.write(led1, gpio.LOW);
 gpio.write(led2, gpio.LOW);
 
@@ -21,23 +26,17 @@ sw[0]="ON_"
 
 local lasttemp = 0
 
-local function willwrite (led, s)
-  return function () 
-           gpio.write(led, s) 
-         end
-end
+local actions = {
+  LERTEMP = readtemp,
+  LIGA1 = led_um.liga()
+  DESLIGA1 = led_um.desliga()
+  LIGA2 = led_dois.liga()
+  DESLIGA2 = led_dois.desliga()
+}
 
 local function readtemp()
   lasttemp = adc.read(0)*(3.3/10.24)
 end
-
-local actions = {
-  LERTEMP = readtemp,
-  LIGA1 = willwrite(led1, gpio.HIGH),
-  DESLIGA1 = willwrite(led1, gpio.LOW),
-  LIGA2 = willwrite(led2, gpio.HIGH),
-  DESLIGA2 = willwrite(led2, gpio.LOW),
-}
 
 srv = net.createServer(net.TCP)
 
@@ -82,7 +81,7 @@ function receiver(sck, request)
 ]]
 
   buf = string.gsub(buf, "$(%w+)", vals)
-  sck:send(buf, function() print("respondeu") end)
+  sck:send(buf, function() print("respondeu") sck:close() end)
 end
 
 if srv then
@@ -95,3 +94,15 @@ end
 addr, port = srv:getaddr()
 print(addr, port)
 print("servidor inicializado.")
+
+function newled (num) 
+  pin = num,
+  return {
+    liga = function () 
+       gpio.write(pin, gpio.HIGH) 
+    end,
+    desliga = function () 
+      gpio.write(pin, gpio.LOW) 
+    end
+  }
+end
