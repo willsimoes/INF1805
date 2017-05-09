@@ -16,9 +16,9 @@ led_dois = newled(led2)
 gpio.write(led1, gpio.LOW);
 gpio.write(led2, gpio.LOW);
 
-local led={}
-led[0]="OFF"
-led[1]="ON_"
+local led_state={}
+led_state[0]="OFF"
+led_state[1]="ON_"
 
 local sw={}
 sw[1]="OFF"
@@ -28,10 +28,10 @@ local lasttemp = 0
 
 local actions = {
   LERTEMP = readtemp,
-  LIGA1 = led_um.liga()
-  DESLIGA1 = led_um.desliga()
-  LIGA2 = led_dois.liga()
-  DESLIGA2 = led_dois.desliga()
+  PISCA1 = led_um.pisca()
+  PARA1 = led_um.para()
+  PISCAR = led_dois.pisca()
+  PARA2 = led_dois.para()
 }
 
 local function readtemp()
@@ -66,18 +66,18 @@ function receiver(sck, request)
     TEMP =  string.format("%2.1f", lasttemp),
     CHV1 = gpio.LOW,
     CHV2 = gpio.LOW,
-    LED1 = led[gpio.read(led1)],
-    LED2 = led[gpio.read(led2)],
+    LED1 = led_state[gpio.read(led1)],
+    LED2 = led_state[gpio.read(led2)],
   }
 
   local buf = [[
 <h1><u>PUC Rio - Sistemas Reativos</u></h1>
 <h2><i>ESP8266 Web Server</i></h2>
         <p>Temperatura: $TEMP oC <a href="?pin=LERTEMP"><button><b>REFRESH</b></button></a>
-        <p>LED 1: $LED1  :  <a href="?pin=LIGA1"><button><b>ON</b></button></a>
-                            <a href="?pin=DESLIGA1"><button><b>OFF</b></button></a></p>
-        <p>LED 2: $LED2  :  <a href="?pin=LIGA2"><button><b>ON</b></button></a>
-                            <a href="?pin=DESLIGA2"><button><b>OFF</b></button></a></p>
+        <p>LED 1: $LED1  :  <a href="?pin=PISCA1"><button><b>ON</b></button></a>
+                            <a href="?pin=PARA1"><button><b>OFF</b></button></a></p>
+        <p>LED 2: $LED2  :  <a href="?pin=PISCA2"><button><b>ON</b></button></a>
+                            <a href="?pin=PARA2"><button><b>OFF</b></button></a></p>
 ]]
 
   buf = string.gsub(buf, "$(%w+)", vals)
@@ -96,6 +96,8 @@ print(addr, port)
 print("servidor inicializado.")
 
 function newled (num) 
+  local ledtimer = tmr.create()
+  ledtimer:register(1000, tmr.ALARM_SEMI, self.piscar())
   pin = num,
   return {
     liga = function () 
@@ -103,6 +105,17 @@ function newled (num)
     end,
     desliga = function () 
       gpio.write(pin, gpio.LOW) 
+    end,
+    piscar = function (self) 
+      ledtimer:start()
+      if(gpio.read(pin)) then
+        desliga()
+      else
+        liga()
+      end
+    end,
+    parar = function () 
+      ledtimer:stop()
     end
   }
 end
