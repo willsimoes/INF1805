@@ -38,13 +38,11 @@ function newled (num)
   }
 end
 
-print("criando leds")
 led_um = newled(led1)
 led_dois = newled(led2)
 
 
 function pisca_leds () 
-  print("piscando leds")
   led_um:piscar()
   led_dois:piscar()
 end
