@@ -29,36 +29,50 @@ function receiver(sck, request)
 
   local buf = [[
 
-  <button id="location-button"><b>ENVIAR LOCALICACAO</b></button>
-  <div id="mensagem"></div>
 
+<div id="mensagem"></div>
   <script>
-    document.getElementById("location-button").onclick = sendLocation;
 
-    function sendLocation () {
+  window.onload = sendLocation();
+  
+  var mensagem = document.getElementById("mensagem");
+
+  function sendLocation () {
       if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(getLocation,showError);
-        } else {
+            navigator.geolocation.getCurrentPosition(doGetLocation,showError);
+        } else { 
             mensagem.innerHTML = "Geolocation is not supported by this browser.";
         }
     }
 
-    function getLocation(position) {
+    function doGetLocation(position) {  
+    var req = new XMLHttpRequest();
 
+    req.open("GET", getLocation(position) , true);
+
+    req.onreadystatechange = function() {
+      //se a requisição foi concluída e se a resposta do servidor foi recebida com sucesso
+      if (req.readyState == 4 && req.status == 200) {
+        //chama sendLocation a cada 2 minutos
+        setTimeout(sendLocation, 120000);
+      }
+    }
+  }
+
+    function getLocation(position) {
       var valueData = getData();
-     
       var valueLon = position.coords.latitude;
       var valueLat = position.coords.longitude;
 
-      location.href = "?lon=" + valueLon + "&lat=" + valueLat + "&data=" + valueData + "&"; 
+      return "?lon=" + valueLon + "&lat=" + valueLat + "&data=" + valueData; 
     }
 
     function sendFakeLocation () {
       var valueData = getData();
       valueLon = -22.979239399999997;
       valueLat = -43.232571199999995;
-      location.href = "?lon=" + valueLon + "&lat=" + valueLat + "&data=" + valueData + "&"; 
-  }
+      location.href = "?lon=" + valueLon + "&lat=" + valueLat + "&data=" + valueData; 
+    }
 
     function getData() {
       var dataSinal = new Date();
@@ -83,23 +97,21 @@ function receiver(sck, request)
         switch(error.code) {
             case error.PERMISSION_DENIED:
                 mensagem.innerHTML = "User denied the request for Geolocation."
-                sendFakeLocation();
+                setTimeout(sendFakeLocation, 120000);
                 break;
             case error.POSITION_UNAVAILABLE:
                 mensagem.innerHTML = "Location information is unavailable."
-                sendFakeLocation();
                 break;
             case error.TIMEOUT:
                 mensagem.innerHTML = "The request to get user location timed out."
-                sendFakeLocation();
                 break;
             case error.UNKNOWN_ERROR:
                 mensagem.innerHTML = "An unknown error occurred."
-                sendFakeLocation();
                 break;
         }
     }
 </script>
+
 ]]
 
   sck:send(buf, function() print("respondeu") sck:close() end)
