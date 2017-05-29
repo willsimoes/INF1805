@@ -1,33 +1,3 @@
-srv = net.createServer(net.TCP)
-
-local lon, lat, dt, hora;
-
-function receiver(sck, request)
-
-  -- analisa pedido para encontrar valores enviados
-  local _, _, method, path, vars = string.find(request, "([A-Z]+) ([^?]+)%?([^ ]+) HTTP");
-  -- se nÃ£o conseguiu casar, tenta sem variÃ¡veis
-  print(method, path, vars)
-  if(method == nil)then
-    _, _, method, path = string.find(request, "([A-Z]+) (.+) HTTP");
-     print(method, path)
-  end
-  
-  local sinal = {}
-  
-  if (vars ~= nil) then
-    for k, v in string.gmatch(vars, "([^=]+)=([^=]+)&") do
-      sinal[k] = v
-      print (k, sinal[k])
-    end
-  end
-
-  if(sinal["data"] ~= nil) then
-    _, _, dt, hora = string.find(sinal["data"], "(%d+/%d+/%d+)$(.+)");
-  end
-
-
-  local buf = [[
 <div id="mensagem"></div>
   <script>
 
@@ -49,7 +19,7 @@ function receiver(sck, request)
     req.open("GET", getLocation(position) , true);
 
     req.onreadystatechange = function() {
-      //se a requisição foi concluída e se a resposta do servidor foi recebida com sucesso
+      //se a requisicao foi concluída e se a resposta do servidor foi recebida com sucesso
       if (req.readyState == 4 && req.status == 200) {
         //chama sendLocation a cada 2 minutos
         setTimeout(sendLocation, 120000);
@@ -109,19 +79,3 @@ function receiver(sck, request)
         }
     }
 </script>
-
-]]
-
-  sck:send(buf, function() print("respondeu") sck:close() end)
-end
-
-if srv then
-  srv:listen(80,"192.168.1.6", function(conn)
-      print("estabeleceu conexÃ£o")
-      conn:on("receive", receiver)
-    end)
-end
-
-addr, port = srv:getaddr()
-print(addr, port)
-print("servidor inicializado.")
