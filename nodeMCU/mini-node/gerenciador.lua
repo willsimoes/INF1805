@@ -4,16 +4,28 @@ JSON = (loadfile "JSON.lua")()
 MQTT = require("mqtt_library")
 MQTT.Utility.set_debug(true)
 
-topics = { "botaoajuda", "localizacao" }
+-- topicos que gerenciador vai assinar
+topics = { "localizacao", "sensor", "monitoramento" }
 
-client = MQTT.client.create("localhost", 1833, callback)
-client:subscribe(topics)
+c = MQTT.client.create("localhost", 1833, callback)
+c:connect("gerenciador-id")
+c:subscribe(topics)
 
+-- callback chamada quando mensagens dos topicos chegam
 function callback(topic, message)
     print("Received: " .. topic .. ": " .. message)
-    if topic == "botaoajuda" then 
-      client:publish("acoes", "LOCALIZACAO")
-    else if topic == "localizacao"
+    if topic == "sensor" then
+        print("Processando dados do sensor. Mensagem: " .. message)
+        -- "processa" dado do sensor
+        local distance = tonumber(message)
+        if distance < 30 then
+            c:publish("acoes", "LIGALED")
+        else if distance > 30 then
+            c:publish("acoes", "DESLIGALED")
+        end
+    else if topic == "localizacao" then
+        print("Processando localizacao. Mensagem: " .. message)
+        lastLocation, origem = message:match("(.+) (.+)")
         local sinal = {}
     
         if (lastLocation ~= nil) then
@@ -29,13 +41,22 @@ function callback(topic, message)
           _, _, dt, hora = string.find(sinal["data"], "(%d+/%d+/%d+)$(.+)");
         end
 
-        local info = "Usuário localizado em: "  + endereco + " às " + hora + " do dia " + dt;
+        local info = "Usuário última vez localizado em: "  .. endereco .. " às " .. hora .. " do dia " .. dt;
+        if origem == "botaoajuda" then
+            info = "[ATENÇÃO] Usuário solicitou sua ajuda \n" .. info
+        end
 
-        client:publish("monitoramento", info)
+        c:publish("monitoramento", info)
+    else if topic == "monitoramento" then
+        if message == "pedido" then
+          c:public("acoes", "LOCALIZACAO")
+        else
+          print(message)
+        end
     end
 end
 
-
+-- funcao que faz requisicao a API do google Maps para pegar endereco a partir de longitude e latitude
 function processarLocalizacao(lon, lat)
   req = XMLHttpRequest.new()
  
