@@ -8,21 +8,56 @@ pktype usrMsg from radioMsg with
 	var ulong[2] d32;
 end
 
-
-var usrMsg msgRadio;
-msgRadio.source = nodeId;
-msgRadio.target = nodeId-1;
+var ushort pai = nodeId-1;
 
 par/and do
-	emit REQ_TEMP();
-	msgRadio.d16[0] = await TEMP;
-	emit SEND(msgRadio);
-	await SEND_DONE;
+	loop do 
+		var usrMsg msgRadio_temp;
+		emit REQ_TEMP();
+		if nodeId != 1 then
+			msgRadio_temp.d16[0]= nodeId;
+			msgRadio_temp.d16[1] = await TEMP;
+			msgRadio_temp.source = nodeId;
+		end
+		if nodeId > 11 then
+			msgRadio_temp.target = pai;
+			stat= qPut(msgRadio_temp);
+		else 
+			if nodeId == 11 then
+				msgRadio_temp.target = 1;
+				stat= qPut(msgRadio_temp);
+			end
+		end
+		await 400ms;
+	end
 with
-	msgRadio.d16[1] = await RECEIVE;
-	emit SEND(msgRadio);
-	await SEND_DONE;
+	loop do
+		var usrMsg msgRadio_receive;
+		if nodeId != 14 then
+			msgRadio_receive = await RECEIVE;
+			msgRadio_receive.source = nodeId;
+			if nodeId == 11 then
+				msgRadio_receive.target = 1;	
+			else	
+				msgRadio_receive.target = pai;
+			end
+			stat= qPut(msgRadio_receive);
+		end
+		await 400ms;
+	end
 with
-
-
+	loop do
+		await Q_READY; // quando a fila estiver vazia
+		loop do
+			if qSize() != 0 then
+				var usrMsg msgRadio_queu;
+				stat = qGet(msgRadio_queu);
+				emit SEND(msgRadio_queu);
+				await SEND_DONE;
+				await 100ms;
+			else
+				break;
+			end		
+		end
+	end
 end
