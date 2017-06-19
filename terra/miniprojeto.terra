@@ -1,0 +1,77 @@
+#include "/home/terra/TerraNG/terra/TerraNet.defs"
+#define BROAD_MESSAGE 1
+#define TEMP_MESSAGE 2
+
+pktype usrMsg from radioMsg with
+	var ubyte[4] d8;
+	var ushort[4] d16;
+	var ulong[2] d32;
+end
+
+// mensagem enviada para flood via broadcast e para leitura de temperatura
+var usrMsg sendMsg;
+// mensagem recebida via broadcast e de temperatura repassada de filho pra filho
+var userMsg recMsg;
+// mensagem retiradas da fila para ser enviada
+var userMsg msgData;
+
+var ushort nodeId = getNodeId();
+var ushort parent;
+
+//Preparando flood
+sendMsg.type = BROAD_MESSAGE;
+sendMsg.source = nodeId;
+sendMsg.target = BROADCAST;
+sendMsg.d16[0] = 0; // nivel
+sendMsg.d16[1] = 0; // round
+
+if nodeId != 11 then
+	// espera mensagem de broadcast
+	recMsg = await RECEIVE (BROAD_MESSAGE);
+	// incrementa nivel 
+	sendMsg.d16[0] = recMsg.d16[0] + 1;
+	parent = recMsg.source;
+else
+	parent = 1;
+end
+
+qPut(sendMsg);
+sendMsg.target = parent;
+sendMsg.type = TEMP_MESSAGE;
+
+
+par/and do
+	loop do 
+		//enviando mensagem de temperatura
+		emit REQ_TEMP();
+		// incrementa round
+		sendMsg.d16[1] = sendMsg.d16[1] + 1
+		// identificacao de qual nó se refere a temperatura
+		sendMsg.d16[2] = nodeId;
+		sedMsg.d16[3] = await TEMP;
+		//adicionar um tempo de espera entre cada round
+		await 10s;
+		qPut(sendMsg);
+	end
+with
+	loop do
+		recMsg = await RECEIVE (TEMP_MESSAGE);
+		recMsg.target = parent;
+		// adicionar um tempo de espera
+		qPut(recMsg);
+	end
+with
+	loop do
+		await Q_READY; // quando a fila estiver vazia
+		loop do
+			if qSize() != 0 then
+				qGet(msgData);
+				emit SEND_ACK(msgData);
+				await SEND_DONE_ACK;
+				// adicionar outro tempo de espera
+			else
+				break;
+			end		
+		end
+	end
+end

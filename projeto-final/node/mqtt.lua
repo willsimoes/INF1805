@@ -1,30 +1,65 @@
 wificonf = {
-  ssid = "guto",
-  pwd = "53057611",
+  ssid = "Alice",
+  pwd = "19601990",
   save = false
 }
 
-MQTT_HOST = "192.168.1.7";
+led1 = 3
+local lastLocation;
+
+MQTT_HOST = "10.0.0.8"
 srv = net.createServer(net.TCP)
 local m = mqtt.Client("node-will", 120)
 
-function publica(c)
-  c:publish("alos","alo do nodemcu!",0,0, 
-            function(client) print("mandou!") end)
+-- cada 2s publica dado do sensor 
+temp = tmr.create()
+temp:register(2000, tmr.ALARM_AUTO,
+      function (timer)
+        publicaSensor()
+      end)
+
+-- se o botao for pressionado, envia localizacao
+gpio.write(led1, gpio.LOW);
+gpio.mode(1, gpio.INT, gpio.PULLUP)
+gpio.trig(1, "down", function(level)
+       enviarLocalizacao("botaoajuda") end) 
+
+function enviarLocalizacao(origem)
+  if lastLocation == nil then
+    lastLocation = "LOCALIZAÇÃO AINDA NÃO ENVIADA"
+  end
+  m:publish("localizacao",lastLocation..origem,0,0, 
+            function(client) print("mandou localizacao!") end) 
+end
+
+local acoes = {
+  LIGALED = gpio.write(led1, gpio.HIGH),
+  DESLIGALED = gpio.write(led1, gpio.LOW),
+  LOCALIZACAO = enviarLocalizacao("pedido") 
+}
+
+function publicaSensor() 
+  math.randomseed(tmr.time()) 
+  math.random(); math.random(); math.random()
+  local distancia = 20
+  distancia = distancia + math.random(0, 20)
+  m:publish("sensor", distancia, 0,0, function(client) print("mandou sensor!") end)
 end
 
 function novaInscricao (c)
-  local msgsrec = 0
-  function novamsg (c, t, m)
-    print ("mensagem ".. msgsrec .. ", topico: ".. t .. ", dados: " .. m)
-    msgsrec = msgsrec + 1
+  function novamsg (c, t, acao)
+    print ("acao ".. acao)
+    local executaAcao = acoes[acao]
+    if executaAcao then
+      executaAcao()
+    end
   end
   c:on("message", novamsg)
 end
 
 function conectado (client)
-  publica(client)
-  client:subscribe("alos", 0, novaInscricao)
+  temp:start()
+  client:subscribe("acoes", 0, novaInscricao)
 end 
 
 function connectedToWifi()
@@ -145,7 +180,7 @@ wifi.setmode(wifi.STATION)
 tmr.create():alarm(8000, tmr.ALARM_SINGLE, connectedToWifi)
 
 if srv then
-  srv:listen(80, "192.168.1.9", function(conn)
+  srv:listen(80, "10.0.0.10", function(conn)
       print("estabeleceu conexÃ£o")
       conn:on("receive", receiver)
     end)
@@ -154,8 +189,3 @@ end
 addr, port = srv:getaddr()
 print(addr, port)
 print("servidor inicializado.")
-
-
-        
-
-
