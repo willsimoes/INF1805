@@ -15,11 +15,11 @@ function init()
 	function self.echo_callback(level, when)
 		-- se pino echo foi pra HIGH, começa a medir o tempo
 		if level == gpio.HIGH then
-			print("ECHO High: Iniciando contagem")
+			--print("ECHO High: Iniciando contagem")
 			self.time_start = when
 		-- se pino echo foi pra LOW, termina de medir o tempo (microsegundos) e calcula distancia (cm)
 		elseif level == gpio.LOW then
-			print("ECHO Low: Finalizando contagem")
+			--print("ECHO Low: Finalizando contagem")
 			self.time_end = when
 
 			if (self.time_end - self.time_start) < 0 then
