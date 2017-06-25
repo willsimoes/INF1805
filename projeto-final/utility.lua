@@ -45,16 +45,16 @@ end
 local timer
 
 if (isPsp()) then
-  timer = Timer.new()
-  timer:start()
+  --timer = Timer.new()
+  --timer:start()
 end
 
 local function get_time()
-  if (isPsp()) then
-    return(timer:time() / 1000)
-  else
+  --if (isPsp()) then
+  --  return(timer:time() / 1000)
+  --else
     return(socket.gettime())
-  end
+  --end
 end
 
 local function expired(last_time, duration, type)
