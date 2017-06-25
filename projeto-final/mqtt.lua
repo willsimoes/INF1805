@@ -16,15 +16,8 @@ local m = mqtt.Client("node-will", 120)
 
 local lastLocation;
 
-local function willwrite (led, s)
-  return function () 
-           gpio.write(led, s) 
-         end
-end
-
-
 function enviarLocalizacao(origem)
-  lastLocation = "lon=-22.979239399999997;lat=-43.232571199999995"
+  lastLocation = "lon=-22.979239399999997&lat=-43.232571199999995& "
   m:publish("localizacao",lastLocation..origem,0,0, 
             function(client) print("mandou localizacao!") end) 
 end
