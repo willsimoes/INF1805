@@ -2,8 +2,8 @@
 -- Trigger (output) em D2 e Echo (input e interrupção) em D1 no mini nodeMCU 
 -- adaptado de https://github.com/sza2/node_hcsr04
 
-pin_trigger = 2 -- manda sinal
-pin_echo = 1 -- recebe sinal
+pin_trigger = 2 -- manda sinal, fio azul
+pin_echo = 1 -- recebe sinal, fio branco
 
 function init()
 	local self = {}
