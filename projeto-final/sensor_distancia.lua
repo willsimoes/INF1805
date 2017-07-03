@@ -2,10 +2,12 @@
 -- Trigger (output) em D2 e Echo (input e interrupção) em D1 no mini nodeMCU 
 -- adaptado de https://github.com/sza2/node_hcsr04
 
+sensor_distancia = {}
+
 pin_trigger = 2 -- manda sinal, fio azul
 pin_echo = 1 -- recebe sinal, fio branco
 
-function init()
+function sensor_distancia.init()
 	local self = {}
 	self.time_start = 0
 	self.time_end = 0
@@ -26,9 +28,16 @@ function init()
 				print("!! ERRO. Diferenca de tempo < 0")
 				print("!! Tempo de inicio:   "..self.time_start.."  Tempo de fim:   "..self.time_end)
 			else
-				local distance_cm = (self.time_end - self.time_start) / 29.4 / 2;
-				if distance_cm ~= 0 then
-					print("Distancia:   "..distance_cm)
+				--delta_tempo é o tempo que a onda levou até encontrar o obstáculo
+				local delta_tempo = (self.time_end - self.time_start) / 2;
+				--print("Delta tempo total: ".. (self.time_end - self.time_start))
+				--print("Delta tempo / 2 : ".. delta_tempo)
+				--local distancia_cm = (self.time_end - self.time_start) / 29.4 / 2
+				--local distancia_diff = delta_tempo/29.4
+				--print("Distancia calculada diferente: ".. distancia_diff)
+				--print("Distancia em cm:".. distancia_cm)
+				if delta_tempo ~= 0  then
+					publicaDadosUltrassonico(delta_tempo)
 				end
 			end
 		else
@@ -47,11 +56,6 @@ function init()
 
 	return self
 end
-
-device = init()
---mede de 10 em 10s
-tmr.create():alarm(10000, tmr.ALARM_AUTO, device.measure)
-
 
 
 
