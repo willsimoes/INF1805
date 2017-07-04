@@ -12,12 +12,21 @@ myMap:setCenter( 37.331692, -122.030456 )
 
 local messageLocation = nil
 
+local initTextParams = { text = "Bem vindo(a) \nao seu assistente pessoal.", 
+								x = display.contentCenterX,
+								y = display.contentCenterY,
+								font = native.systemFont,
+								fontSize = 23,
+								align = center }
+local initText = display.newText( initTextParams )
+initText:setFillColor( 1 )
+
 local function locationHandler( event )
     if ( event.isError ) then
         print( "Map Error: " .. event.errorMessage )
         native.showAlert( "DEBUG", tostring(event.errorMessage) , { "OK" } )
     else
-    	--rua, numero, bairro, cidade e paíss
+    	-- rua, numero, bairro, cidade e país
     	messageLocation = "Localizado em:\n" ..
     	event.street..", "..event.streetDetail..".\n" ..
     	event.cityDetail..", "..event.city..", "..event.country..".\n"
@@ -26,13 +35,11 @@ end
 
 local attempts = 0
 
-function getLocation( event ) 
-	
+function getLocation( event )
 	local currentLocation = myMap:getUserLocation()
 
 	if ( currentLocation.errorCode or ( currentLocation.latitude == 0 and currentLocation.longitude == 0 ) ) then
 	        attempts = attempts + 1
-	 
 	        if ( attempts > 10 ) then
 	            native.showAlert( "Sem sinal de GPS", "Não consigo sicronizar com o GPS", { "Ok" } )
 	        else
@@ -49,19 +56,22 @@ function getCurrentDateAndTime()
 end
 
 function getFullLocationAndTime()
-	lat, lon = getLocation() 
-	if lat == nil or lon == nil then
-		native.showAlert( "DEBUG", "lat/lon nil" , { "Uhul" } )
-	else
+	local fullLocationAndTime = nil
+	local data, hora = getCurrentDateAndTime()
+	local lat, lon = getLocation() 
+
+	if lat ~= nil and lon ~= nil then
 		myMap:nearestAddress( lat, lon, locationHandler )
 	end
-	local hora, data = getCurrentDateAndTime()
-	local dateAndTime = "Às "..hora.." de "..data.."."
-	return (messageLocation or " ")..dateAndTime
+	
+	local dateAndTime = "As "..hora.." de "..data.."."
+	fullLocationAndTime = (messageLocation or " ")..dateAndTime
+	
+	return fullLocationAndTime, lat, lon
 end
 
+
 eventsAndLocation = function (topic, msg)
-	  native.showAlert( "DEBUG", "Chegou nova msg", { "Ok" } )
 	  if topic == "eventos" then
 	  	if msg == "ajuda" then
 	  		local message = "Alerta de ajuda!!\n"..getFullLocationAndTime()
@@ -84,10 +94,14 @@ eventsAndLocation = function (topic, msg)
 	  	end
 	  elseif topic == "acoes" then
 	  	if msg == "LOCALIZAR" then
-		  	local stringLocation = getFullLocationAndTime() 
-		  	lat, lon = getLocation()
-		  	local location = "lat="..lat.."&".."lon="..lon.."&"
-		  	local message = stringLocation.."$"..location
+	  		local message = "Aguardando"
+		  	local stringLocation, lat, lon = getFullLocationAndTime()  
+		  	
+		  	if lat ~= nil and lon ~= nil then
+		  		local location = "lat="..lat.."&".."lon="..lon.."&"
+		  		message = stringLocation.."$"..location
+		  	end
+
 		  	c:publish("localizacao", message) 
 		end
 	  end
@@ -96,28 +110,16 @@ end
 c = MQTT.client.create("192.168.15.80", 1883, eventsAndLocation)
 
 c:connect("corona")
---[[if string == nil then
-	native.showAlert( "parece que se conectou", tostring(c) , { "Ok" } )
-end
-if string ~= nil then
-	native.showAlert( "olarr 2 com Broker", tostring(c)..string , { "Ok" } )
-end]]--
+c:subscribe({"eventos", "acoes"})
 
-ret = c:subscribe({"eventos", "acoes"})
---[[native.showAlert( "oieeee 2", "to aqui" , { "Ok" } )
-if ret ~= nil then
-	native.showAlert( "opa", tostring(ret) , { "Ok" } )
-else 
-	native.showAlert( "opa", "nulo baby" , { "Ok" } )
-end]]--
 
 function handleMsg()
     c:handler() 
-    --[[if ret2 ~= nil then
-		native.showAlert( "opa", tostring(ret2) , { "Ok" } )
-	else 
-		native.showAlert( "opa", "nulo baby" , { "Ok" } )
-	end]]-- 
 end
 
 timer.performWithDelay(1000, handleMsg, 0)
+
+introSound = audio.loadSound( "intro.wav" )
+audio.play( introSound )
+
+--timer.performWithDelay(2000, getFullLocationAndTime)

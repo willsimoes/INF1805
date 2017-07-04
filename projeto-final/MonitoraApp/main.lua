@@ -10,7 +10,7 @@ local widget = require( "widget" )
 ---------------------------------------------------------- Parte Gráfica
 
 local background = display.newRect( display.contentCenterX, display.contentCenterY, display.contentWidth, display.contentHeight )
-background:setFillColor( 1 )	-- white
+background:setFillColor( 1 ) -- fundo branco
 
 local locationTextParams = { text = "Aguardando localização...", 
 								x = display.contentCenterX + 5,
@@ -18,16 +18,15 @@ local locationTextParams = { text = "Aguardando localização...",
 								font = native.systemFont,
 								fontSize = 12 }
 local locationText = display.newText( locationTextParams )
-locationText:setFillColor( 0 )	-- black 
+locationText:setFillColor( 0 )	-- cor da fonte: preta 
 
 myMap = native.newMapView(display.contentCenterX, locationText.y + locationText.contentHeight/2 + 170, 240, 290)
 
-function getCoordinates (string)
-   local coordinates = {}     
-   if (string ~= nil) then
-     for k, v in string.gmatch(string, "([^=]+)=([^=]+)&") do
+function getCoordinates (coordStr)
+   local coordinates = {}   
+   if (coordStr ~= nil) then
+     for k, v in string.gmatch(coordStr, "(%a+)=([-]?[%d]+%.[%d]+)&") do
        coordinates[k] = v
-       print (k, coordinates[k])
      end
    end
    return coordinates
@@ -35,22 +34,24 @@ end
 
 ---------------------------------------------------------- Conexão com MQTT Broker
 callback = function (topic, message)
-	  native.showAlert( "DEBUG", "Topico:  "..tostring(topic).."\nMensagem: "..tostring(message), { "Ok" } )
 	  if topic == "localizacao" then
+	  	if message == "Aguardando" then
+	  		return 
+	  	end
 	  	--atualiza variaveis globais
 	  	lastLocation, strCoord = message:match("([^$]+)%$(.+)")
-	  	native.showAlert( "Alerta do usuário", tostring(lastLocation)..tostring(strcCoord) , { "Ok" } )
-	  	--print("LastLocation: "..lastlocation.."  strcCoord: "..strcCoord)
-	  	if strcCoord ~= nil then
-	  		native.showAlert( "Alerta do usuário", tostring(strcCoord) , { "Ok" } )
-	    	local coordinates = getCoordinates(strCoord)
-       		myMap:setCenter( coordinates[lat], coordinates[lon] )
-        	myMap:addMarker( coordinates[lat], coordinates[lon] )
+	  	if strCoord ~= nil then
+	    	local coord = getCoordinates(strCoord)
+	    	if coord["lat"] ~= nil and coord["lon"] ~= nil then
+	    		local latitude = tonumber(coord["lat"])
+	    		local longitude = tonumber(coord["lon"])
+       			myMap:setCenter( latitude, longitude ) 
+             	myMap:addMarker( latitude, longitude )
+	    	end
+	    	
         end
-        if strcCoord ~= nil then 
-        	native.showAlert( "Alerta do usuário", tostring(strcCoord) , { "Ok" } )
-        	locationTextParams.text = lastLocation
-	  		locationText = display.newText( locationTextParams )
+        if lastLocation ~= nil then 
+        	locationText.text = lastLocation
         end
 	  	
 	  elseif topic == "alerta" then
@@ -70,11 +71,16 @@ end
 
 timer.performWithDelay(1000, handleMsg, 0)
 
-local function locationHandler( event )
+
+local function pedeLocalizacao ()
 	c:publish("acoes", "LOCALIZAR")
 end
 
-locationHandler()
+local function locationHandler( event )
+	timer.performWithDelay(1000, pedeLocalizacao, 2)
+end
+
+--timer.performWithDelay(1000, pedeLocalizacao)
 
 
 ---------------------------------------------------------- Parte grafica 2

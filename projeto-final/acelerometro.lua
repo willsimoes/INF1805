@@ -6,7 +6,7 @@ acelerometro = {}
 
 dev_addr = 0x68 --104
 bus = 0
-sda, scl = 3, 4
+sda, scl = 5, 4
 -- sda fio laranja, scl fio amarelo
 function acelerometro.init() 
     local self = {}

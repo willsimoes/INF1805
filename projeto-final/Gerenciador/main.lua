@@ -12,7 +12,7 @@ function love.load()
 
    -- callback chamada quando mensagens dos topicos chegam
    callback = function (topic, message)
-       print("Received from " .. topic .. ": " .. message)
+       --print("Received from " .. topic .. ": " .. message)
        if topic == "dados_ultrassonico" then
        	   print("---------------------------------------------------")
            print("Processando dados do sensor de distancia. Mensagem: " .. message)

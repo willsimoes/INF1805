@@ -37,7 +37,8 @@ acoes = {
 
 -- se o botao for pressionado, publica no topico o evento de ajuda
 gpio.trig(help_button, "down", function(level)
-       m:publish("evento", "ajuda") end) 
+       print("Botao de ajuda, entrou aqui!")
+       m:publish("eventos", "ajuda", 0, 0, function(client) print("mandou evento de ajuda!") end) end)
 
 -- callback de inscrição do topico de ação
 function executarAcao (c)

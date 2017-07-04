@@ -5,7 +5,7 @@
 sensor_distancia = {}
 
 pin_trigger = 2 -- manda sinal, fio azul
-pin_echo = 1 -- recebe sinal, fio branco
+pin_echo = 6 -- recebe sinal, fio branco
 
 function sensor_distancia.init()
 	local self = {}
@@ -29,13 +29,7 @@ function sensor_distancia.init()
 				print("!! Tempo de inicio:   "..self.time_start.."  Tempo de fim:   "..self.time_end)
 			else
 				--delta_tempo é o tempo que a onda levou até encontrar o obstáculo
-				local delta_tempo = (self.time_end - self.time_start) / 2;
-				--print("Delta tempo total: ".. (self.time_end - self.time_start))
-				--print("Delta tempo / 2 : ".. delta_tempo)
-				--local distancia_cm = (self.time_end - self.time_start) / 29.4 / 2
-				--local distancia_diff = delta_tempo/29.4
-				--print("Distancia calculada diferente: ".. distancia_diff)
-				--print("Distancia em cm:".. distancia_cm)
+				local delta_tempo = (self.time_end - self.time_start) / 2
 				if delta_tempo ~= 0  then
 					publicaDadosUltrassonico(delta_tempo)
 				end
