@@ -11,54 +11,65 @@ end
 // mensagem enviada para flood via broadcast e para leitura de temperatura
 var usrMsg sendMsg;
 // mensagem recebida via broadcast e de temperatura repassada de filho pra filho
-var userMsg recMsg;
+var usrMsg recMsg;
 // mensagem retiradas da fila para ser enviada
-var userMsg msgData;
+var usrMsg msgData;
 
 var ushort nodeId = getNodeId();
 var ushort parent;
+var ushort wait_putQueu;
+var ushort wait_sendData;
 
+// msg -> [nivel,round,no,0,tempo aleatorio,temperatura,0,0,0,0]
 //Preparando flood
 sendMsg.type = BROAD_MESSAGE;
 sendMsg.source = nodeId;
 sendMsg.target = BROADCAST;
-sendMsg.d16[0] = 0; // nivel
-sendMsg.d16[1] = 0; // round
+sendMsg.d8[0] = 1; // nivel
+sendMsg.d8[1] = 0; // round
 
+//atribui um pai a cada nó
 if nodeId != 11 then
 	// espera mensagem de broadcast
 	recMsg = await RECEIVE (BROAD_MESSAGE);
 	// incrementa nivel 
-	sendMsg.d16[0] = recMsg.d16[0] + 1;
+	sendMsg.d8[0] = recMsg.d8[0] + 1;
 	parent = recMsg.source;
 else
 	parent = 1;
 end
 
-qPut(sendMsg);
+emit SEND(sendMsg);
+await SEND_DONE;	
+
 sendMsg.target = parent;
 sendMsg.type = TEMP_MESSAGE;
 
+//espera = nivel*100 + randomico -> unico pra cada nó
+wait_putQueu = sendMsg.d8[0]*1000 + nodeId*100;
 
 par/and do
+    await (wait_putQueu)ms;
 	loop do 
 		//enviando mensagem de temperatura
 		emit REQ_TEMP();
 		// incrementa round
-		sendMsg.d16[1] = sendMsg.d16[1] + 1
+		sendMsg.d8[1] = sendMsg.d8[1] + 1;
 		// identificacao de qual nó se refere a temperatura
-		sendMsg.d16[2] = nodeId;
-		sedMsg.d16[3] = await TEMP;
-		//adicionar um tempo de espera entre cada round
-		await 10s;
+		sendMsg.d8[2] = nodeId;
+		sendMsg.d16[1] = await TEMP;
+		
 		qPut(sendMsg);
+        // espera 10s para mandar uma nova temperatura
+        await 10s; 
 	end
 with
 	loop do
+        // recebo mensagem de temperatura e passo pra frente (pro meu pai)
 		recMsg = await RECEIVE (TEMP_MESSAGE);
 		recMsg.target = parent;
-		// adicionar um tempo de espera
-		qPut(recMsg);
+       
+ 		qPut(recMsg);
 	end
 with
 	loop do
@@ -66,9 +77,11 @@ with
 		loop do
 			if qSize() != 0 then
 				qGet(msgData);
+                // valor aleatorio que cada no esta gerando + 1000*nivel
+                wait_sendData = (random()%100) + msgData.d8[0]*10;
 				emit SEND_ACK(msgData);
 				await SEND_DONE_ACK;
-				// adicionar outro tempo de espera
+                await (wait_sendData)ms;
 			else
 				break;
 			end		
