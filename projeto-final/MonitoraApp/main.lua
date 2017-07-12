@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------------------
 --
--- view1.lua
+-- main.lua
 --
 -----------------------------------------------------------------------------------------
 MQTT = require("mqtt_library")
@@ -79,8 +79,6 @@ end
 local function locationHandler( event )
 	timer.performWithDelay(1000, pedeLocalizacao, 2)
 end
-
---timer.performWithDelay(1000, pedeLocalizacao)
 
 
 ---------------------------------------------------------- Parte grafica 2

@@ -78,7 +78,7 @@ eventsAndLocation = function (topic, msg)
 	  		c:publish("alerta", message)
 
 	  		local options = { 
-	  					to = { "988267269" }, 
+	  					to = { "9882xxxx" }, 
 	  					body = message 
 	  				}
 			native.showPopup( "sms", options )
@@ -87,7 +87,7 @@ eventsAndLocation = function (topic, msg)
 	  		c:publish("alerta", message) 
 
 	  		local options = { 
-	  					to = { "988267269" }, 
+	  					to = { "9882xxxx" }, 
 	  					body = message 
 	  				}
 			native.showPopup( "sms", options )
